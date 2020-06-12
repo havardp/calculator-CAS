@@ -3,6 +3,7 @@ package calculator.lexer
 import com.example.linearmath.expressionCalculator.NotAnOperatorException
 
 // TODO: add constant token class
+// TODO: Maybe do tokens as in old code, with a seperate token class for each operator/operand, and operate method in them
 abstract class Token(val value: String, val precedence: Int? = null){
     override fun toString() : String {
         return value

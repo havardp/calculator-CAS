@@ -41,7 +41,7 @@ class Lexer(private var str: String) {
     /**
      *  the public method of the class, which is responsible for getting the token from extractToken(), and sets it to previous
      *
-     *  @return returns the token we extraced
+     *  @return the token we extracted
      */
     fun getNextToken(): Token {
         val token = extractToken()
@@ -55,7 +55,7 @@ class Lexer(private var str: String) {
      *
      *  also has some logic for adding multiplication tokens where it should be present, for example 2(2) -> 2*(2)
      *
-     *  @return returns the token we extracted
+     *  @return the token we extracted
      */
     private fun extractToken() : Token{
         for(i in 0 until str.length - pointer){
@@ -72,7 +72,7 @@ class Lexer(private var str: String) {
             if(OperandToken.assert(ss)){
                 // (2)3 -> (2)*3
                 // x2   -> x*2
-                if(previous?.value == ")" || previous is VariableToken) return BinaryOperatorToken("*", 1)
+                if((previous is ParenthesisToken && previous?.value == ")") || previous is VariableToken) return BinaryOperatorToken("*", 1)
 
                 // If next element is part of the operand, continue
                 if (nextElement && OperandToken.assert(str[index].toString())) continue
@@ -107,7 +107,7 @@ class Lexer(private var str: String) {
             else if(ParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(ss == "(" && previous !is BinaryOperatorToken) return BinaryOperatorToken("*", 1)
+                if(ss == "(" && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return BinaryOperatorToken("*", 1)
 
                 advance(i)
                 return ParenthesisToken(ss, -1)
@@ -115,7 +115,7 @@ class Lexer(private var str: String) {
 
             // Check if it is a variable, currently only use "x" and "y"
             else if (VariableToken.assert(ss)){
-                if(previous is OperandToken || previous?.value == ")") return BinaryOperatorToken("*", 1)
+                if(previous is OperandToken || (previous is ParenthesisToken && previous?.value == ")")) return BinaryOperatorToken("*", 1)
 
                 advance(i)
                 return VariableToken(ss)
