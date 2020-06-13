@@ -10,7 +10,7 @@ import calculator.exception.InvalidSyntaxException
  *
  * var gnt = getNextToken()
  * while(gnt !is EOFToken){
- *      // logic on current token
+ *      // logic on token
  *      gnt = getNextToken()
  * }
  *
@@ -19,13 +19,11 @@ import calculator.exception.InvalidSyntaxException
  * @property previous contains the previous token which was returned, to check if we need to add multiplication token (for example 2(2) -> 2*(2)
  */
 class Lexer(private var str: String) {
-    private var pointer: Int
-    private var previous: Token?
+    private var pointer: Int = 0
+    private var previous: Token? = null
 
     init {
         str = str.replace(" ", "")
-        pointer = 0
-        previous = null
     }
 
     /**
@@ -57,9 +55,10 @@ class Lexer(private var str: String) {
      *
      *  @return the token we extracted
      */
+    // TODO might make this not a for loop, but instead do checks, and call functions which check next 2 for functions, and while loop for operands.
     private fun extractToken() : Token{
         for(i in 0 until str.length - pointer){
-            // The index of $str that we are currently analysing
+            // The index of $str that we are currently analysing, actually the index of the string after the current
             val index = pointer+i+1
 
             // The substring that we do lexical analysis on, ss for substring
@@ -72,7 +71,7 @@ class Lexer(private var str: String) {
             if(OperandToken.assert(ss)){
                 // (2)3 -> (2)*3
                 // x2   -> x*2
-                if((previous is ParenthesisToken && previous?.value == ")") || previous is VariableToken) return BinaryOperatorToken("*", 1)
+                if(previous is RightParenthesisToken || previous is VariableToken) return BinaryOperatorToken("*", 1)
 
                 // If next element is part of the operand, continue
                 if (nextElement && OperandToken.assert(str[index].toString())) continue
@@ -88,10 +87,10 @@ class Lexer(private var str: String) {
 
                 // Checks if the arithmetic operator should be a unary operator
                 // Regarding the double bang, it should never happen because whenever pointer != 0, previous will exist
-                if(pointer == 0
-                        || (UnaryOperatorToken.assert(ss)
-                                && (previous?.value == "("
-                                || BinaryOperatorToken.assert(previous!!.value)))) {
+                if(UnaryOperatorToken.assert(ss)
+                        && (pointer == 0
+                            || previous is LeftParenthesisToken
+                            || BinaryOperatorToken.assert(previous!!.value))) {
                     return UnaryOperatorToken(ss, Int.MAX_VALUE)
                 }
                 return BinaryOperatorToken(ss, BinaryOperatorToken.precedence(ss))
@@ -103,19 +102,27 @@ class Lexer(private var str: String) {
                 return UnaryOperatorToken(ss, Int.MAX_VALUE)
             }
 
-            // Check if it is a parenthesis
-            else if(ParenthesisToken.assert(ss)){
+            // Check if it is a leftparenthesis
+            else if(LeftParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(ss == "(" && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return BinaryOperatorToken("*", 1)
+                if(previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return BinaryOperatorToken("*", 1)
 
                 advance(i)
-                return ParenthesisToken(ss, -1)
+                return LeftParenthesisToken(ss, -1)
+            }
+
+            // Check if it is a rightparenthesis
+            else if(RightParenthesisToken.assert(ss)){
+                advance(i)
+                return LeftParenthesisToken(ss, -1)
             }
 
             // Check if it is a variable, currently only use "x" and "y"
             else if (VariableToken.assert(ss)){
-                if(previous is OperandToken || (previous is ParenthesisToken && previous?.value == ")")) return BinaryOperatorToken("*", 1)
+                // x2 -> x*2
+                // (2)x -> (2)*x
+                if(previous is OperandToken || previous is RightParenthesisToken) return BinaryOperatorToken("*", 1)
 
                 advance(i)
                 return VariableToken(ss)

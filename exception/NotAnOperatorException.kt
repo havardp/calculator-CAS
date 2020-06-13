@@ -1,3 +1,3 @@
-package com.example.linearmath.expressionCalculator
+package calculator.exception
 
 class NotAnOperatorException(msg: String) : Exception(msg)

@@ -1,6 +1,6 @@
 package calculator.lexer
 
-import com.example.linearmath.expressionCalculator.NotAnOperatorException
+import calculator.exception.NotAnOperatorException
 
 // TODO: add constant token class
 // TODO: Maybe do tokens as in old code, with a seperate token class for each operator/operand, and operate method in them
@@ -10,11 +10,21 @@ abstract class Token(val value: String, val precedence: Int? = null){
     }
 }
 
-class ParenthesisToken(value: String, precedence: Int): Token(value, precedence) {
+class LeftParenthesisToken(value: String, precedence: Int): Token(value, precedence) {
     companion object {
         // Checks if the passed string is a parenthesis operator
         fun assert(str: String) : Boolean {
-            if (str == "(" || str == ")") return true
+            if (str == "(" ) return true
+            return false
+        }
+    }
+}
+
+class RightParenthesisToken(value: String, precedence: Int): Token(value, precedence) {
+    companion object {
+        // Checks if the passed string is a parenthesis operator
+        fun assert(str: String) : Boolean {
+            if (str == ")") return true
             return false
         }
     }
