@@ -120,7 +120,7 @@ class Lexer(private var str: String) {
 
             // Check if it is a variable, currently only use "x" and "y"
             else if (VariableToken.assert(ss)){
-                // x2 -> x*2
+                // 2x   -> 2*x
                 // (2)x -> (2)*x
                 if(previous is OperandToken || previous is RightParenthesisToken) return BinaryOperatorToken("*", 1)
 
