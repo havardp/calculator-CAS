@@ -28,7 +28,7 @@ class Lexer(private var str: String) {
 
     /**
      *  increments the pointer by the number of characters in the extracted token
-     *  used whenever a token is returned, so that the pointer points past the token we extraced from the string
+     *  used whenever a token is returned, so that the pointer points past the token we extracted from the string
      *
      *  @param length the amount which we want to increase the pointer by.
      */
@@ -71,7 +71,7 @@ class Lexer(private var str: String) {
             if(OperandToken.assert(ss)){
                 // (2)3 -> (2)*3
                 // x2   -> x*2
-                if(previous is RightParenthesisToken || previous is VariableToken) return BinaryOperatorToken("*", 1)
+                if(previous is RightParenthesisToken || previous is VariableToken) return Mult()
 
                 // If next element is part of the operand, continue
                 if (nextElement && OperandToken.assert(str[index].toString())) continue
@@ -91,38 +91,32 @@ class Lexer(private var str: String) {
                         && (pointer == 0
                             || previous is LeftParenthesisToken
                             || BinaryOperatorToken.assert(previous!!.value))) {
-                    return UnaryOperatorToken(ss, Int.MAX_VALUE)
+                    return UnaryOperatorToken.acquire(ss)
                 }
-                return BinaryOperatorToken(ss, BinaryOperatorToken.precedence(ss))
+                return BinaryOperatorToken.acquire(ss)
             }
 
             // check if it is a unary operator (mostly functions)
             else if(UnaryOperatorToken.assert(ss)){
                 advance(i)
-                return UnaryOperatorToken(ss, Int.MAX_VALUE)
+                return UnaryOperatorToken.acquire(ss)
             }
 
-            // Check if it is a leftparenthesis
-            else if(LeftParenthesisToken.assert(ss)){
+            // Check if it is a left parenthesis
+            else if(ParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return BinaryOperatorToken("*", 1)
+                if(ss == "(" && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return Mult()
 
                 advance(i)
-                return LeftParenthesisToken(ss, -1)
-            }
-
-            // Check if it is a rightparenthesis
-            else if(RightParenthesisToken.assert(ss)){
-                advance(i)
-                return RightParenthesisToken(ss, -1)
+                return ParenthesisToken.acquire(ss)
             }
 
             // Check if it is a variable, currently only use "x" and "y"
             else if (VariableToken.assert(ss)){
                 // 2x   -> 2*x
                 // (2)x -> (2)*x
-                if(previous is OperandToken || previous is RightParenthesisToken) return BinaryOperatorToken("*", 1)
+                if(previous is OperandToken || previous is RightParenthesisToken) return Mult()
 
                 advance(i)
                 return VariableToken(ss)

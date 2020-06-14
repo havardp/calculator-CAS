@@ -37,7 +37,7 @@ class Parser(private val lexer: Lexer){
 
     /**
      *  Last part of the shunting yard algorithm
-     *  empties the operatorstack
+     *  empties the operator stack
      *
      *  @return the root node of the abstract syntax tree
      */
@@ -117,8 +117,8 @@ class Parser(private val lexer: Lexer){
      *  @return true if it has precedence, else false
      */
     private fun operatorStackHasPrecedence(): Boolean {
-        val leftAssociative = currentToken.precedence == operatorStack.peek().precedence
-        val comparePrecedence = currentToken.precedence!! < operatorStack.peek().precedence!!
+        val leftAssociative = (currentToken as OperatorToken).precedence == (operatorStack.peek() as OperatorToken).precedence
+        val comparePrecedence = (currentToken as OperatorToken).precedence < (operatorStack.peek() as OperatorToken).precedence
         val notParenthesis = operatorStack.peek() !is LeftParenthesisToken
 
         return comparePrecedence || leftAssociative && notParenthesis
