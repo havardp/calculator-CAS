@@ -42,9 +42,7 @@ class Parser(private val lexer: Lexer){
      *  @return the root node of the abstract syntax tree
      */
     private fun extractAST(): AbstractSyntaxTree {
-        while(!operatorStack.empty()){
-            createOperatorNode()
-        }
+        while(!operatorStack.empty()) createOperatorNode()
 
         if(nodeStack.size != 1) throw InvalidSyntaxException("Couldn't parse to a single tree, syntax is wrong")
         return nodeStack.pop()
@@ -55,11 +53,11 @@ class Parser(private val lexer: Lexer){
      *
      *  example, operatorStack being sin token, and node stack plus node of two operands
      *    +     (root node)
-     *  2   2   (child nodes)
+     *  2   3   (child nodes)
      *  becomes
      *   sin    (root node)
      *    +     (child node)
-     *  2   2   (child of child node)
+     *  2   3   (child of child node)
      */
     private fun createOperatorNode(){
         if(nodeStack.isEmpty()) throw InvalidSyntaxException("Mismatch of operator, couldn't parse")

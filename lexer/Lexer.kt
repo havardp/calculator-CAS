@@ -115,7 +115,7 @@ class Lexer(private var str: String) {
             // Check if it is a rightparenthesis
             else if(RightParenthesisToken.assert(ss)){
                 advance(i)
-                return LeftParenthesisToken(ss, -1)
+                return RightParenthesisToken(ss, -1)
             }
 
             // Check if it is a variable, currently only use "x" and "y"
