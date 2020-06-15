@@ -60,7 +60,11 @@ class PrintGraphTreeVisitor: NodeVisitor(){
 
 // Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
 class PrintFlatTreeVisitor: NodeVisitor(){
-    var str = ""
+    private var str = "Flat tree of abstract syntax tree\n"
+
+    fun getFlatTree(): String {
+        return str
+    }
 
     override fun visit(node: BinaryOperatorNode) {
         str += "${(node.token as BinaryOperatorToken).verbose}("
