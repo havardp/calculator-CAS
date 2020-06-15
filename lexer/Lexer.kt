@@ -1,6 +1,7 @@
 package calculator.lexer
 
 import calculator.exception.InvalidSyntaxException
+import calculator.lexer.Token.*
 
 /**
  * A lexer which should be used by the parser to get tokens from a string
@@ -56,7 +57,7 @@ class Lexer(private var str: String) {
      *  @return the token we extracted
      */
     // TODO might make this not a for loop, but instead do checks, and call functions which check next 2 for functions, and while loop for operands.
-    private fun extractToken() : Token{
+    private fun extractToken() : Token {
         for(i in 0 until str.length - pointer){
             // The index of $str that we are currently analysing, actually the index of the string after the current
             val index = pointer+i+1
@@ -71,7 +72,7 @@ class Lexer(private var str: String) {
             if(OperandToken.assert(ss)){
                 // (2)3 -> (2)*3
                 // x2   -> x*2
-                if(previous is RightParenthesisToken || previous is VariableToken) return Mult()
+                if(previous is RightParenthesisToken || previous is VariableToken) return Multiplication()
 
                 // If next element is part of the operand, continue
                 if (nextElement && OperandToken.assert(str[index].toString())) continue
@@ -83,7 +84,6 @@ class Lexer(private var str: String) {
 
             // Check if it is a binary operator (mostly arithmetic, or sometimes unary in the case of + and -)
             else if(BinaryOperatorToken.assert(ss)){
-                advance(i)
 
                 // Checks if the arithmetic operator should be a unary operator
                 // Regarding the double bang, it should never happen because whenever pointer != 0, previous will exist
@@ -91,8 +91,10 @@ class Lexer(private var str: String) {
                         && (pointer == 0
                             || previous is LeftParenthesisToken
                             || BinaryOperatorToken.assert(previous!!.value))) {
+                    advance(i)
                     return UnaryOperatorToken.acquire(ss)
                 }
+                advance(i)
                 return BinaryOperatorToken.acquire(ss)
             }
 
@@ -106,7 +108,7 @@ class Lexer(private var str: String) {
             else if(ParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(ss == "(" && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return Mult()
+                if(ss == "(" && previous != null && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return Multiplication()
 
                 advance(i)
                 return ParenthesisToken.acquire(ss)
@@ -116,7 +118,7 @@ class Lexer(private var str: String) {
             else if (VariableToken.assert(ss)){
                 // 2x   -> 2*x
                 // (2)x -> (2)*x
-                if(previous is OperandToken || previous is RightParenthesisToken) return Mult()
+                if(previous is OperandToken || previous is RightParenthesisToken) return Multiplication()
 
                 advance(i)
                 return VariableToken(ss)

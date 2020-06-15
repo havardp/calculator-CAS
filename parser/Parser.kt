@@ -2,6 +2,7 @@ package calculator.parser
 
 import calculator.exception.InvalidSyntaxException
 import calculator.lexer.*
+import calculator.lexer.Token.*
 import java.util.Stack
 
 /**
