@@ -87,14 +87,13 @@ class Lexer(private var str: String) {
 
                 // Checks if the arithmetic operator should be a unary operator
                 // Regarding the double bang, it should never happen because whenever pointer != 0, previous will exist
+                advance(i)
                 if(UnaryOperatorToken.assert(ss)
-                        && (pointer == 0
+                        && (previous == null
                             || previous is LeftParenthesisToken
                             || BinaryOperatorToken.assert(previous!!.value))) {
-                    advance(i)
                     return UnaryOperatorToken.acquire(ss)
                 }
-                advance(i)
                 return BinaryOperatorToken.acquire(ss)
             }
 

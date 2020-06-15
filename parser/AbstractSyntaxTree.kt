@@ -1,6 +1,6 @@
 package calculator.parser
 
-import calculator.interpreter.NodeVisitor
+import calculator.interpreter.NodeVisitor.NodeVisitor
 import calculator.lexer.Token.Token
 
 abstract class AbstractSyntaxTree(val token: Token){
