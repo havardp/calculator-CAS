@@ -24,15 +24,15 @@ class PrintGraphTreeVisitor: NodeVisitor(){
         return str
     }
 
-    fun createNewLevel(){
+    fun createNewLevel(length: Int){
         if(list.size <= level) {
             list.add("")
-            for(i in 0 until indentation) list[level] += " "
+            for(i in 0 until indentation+ 1 - length) list[level] += " "
         }
     }
 
     override fun visit(node: BinaryOperatorNode) {
-        createNewLevel()
+        createNewLevel(node.token.value.length)
         list[level] += node.token.value + "   "
         level++
         indentation -= 2
@@ -43,7 +43,7 @@ class PrintGraphTreeVisitor: NodeVisitor(){
         level--
     }
     override fun visit(node: UnaryOperatorNode){
-        createNewLevel()
+        createNewLevel(node.token.value.length)
         list[level] += node.token.value + "   "
         level++
         node.middle.accept(this)
@@ -51,12 +51,12 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 
     override fun visit(node: OperandNode) {
-        createNewLevel()
+        createNewLevel(node.token.value.length)
         list[level] += node.token.value + "   "
     }
 
     override fun visit(node: VariableNode) {
-        createNewLevel()
+        createNewLevel(node.token.value.length)
         list[level] += node.token.value + "   "
     }
 }
@@ -92,7 +92,7 @@ class PrintFlatTreeVisitor: NodeVisitor(){
 
 
 class PrettyPrintVisitor: NodeVisitor(){
-    private var str = "Flat tree of abstract syntax tree\n"
+    private var str = ""
     private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
 
     fun prettyPrint(): String {

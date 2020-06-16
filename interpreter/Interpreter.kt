@@ -2,20 +2,14 @@ package calculator.interpreter
 
 import calculator.parser.*
 import calculator.interpreter.NodeVisitor.*
-import java.math.BigDecimal
+import java.util.*
 
-class Interpreter(private val parser: Parser) {
-    private val tree: AbstractSyntaxTree = parser.parse()
+class Interpreter(private val tree: AbstractSyntaxTree) {
+    private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
+    private var currentTree: AbstractSyntaxTree? = null
 
-    fun interpret(): BigDecimal{
-        // Visit nodes with type checker
-        // If no variables and no equal, do this
-        val arithmeticVisitor = ArithmeticVisitor() // visitor which evaluates the tree (only works for arithmetic so far)
-        tree.accept(arithmeticVisitor)
-        return arithmeticVisitor.getVal()
-
-        // elseif variable, rewrite
-        // elseif equal, evaluate both sides, IF EQUAL IS NOT ROOT, there is a problem, throw error
+    init {
+        treeStack.push(tree)
     }
 
     fun printGraphTree(): String{
@@ -30,10 +24,22 @@ class Interpreter(private val parser: Parser) {
         return printFlatTreeVisitor.getFlatTree()
     }
 
-    fun prettyPrint(): String{
+    fun prettyPrint(ast: AbstractSyntaxTree): String{
         val prettyPrintVisitor = PrettyPrintVisitor() // prints the expression in infix form.
-        tree.accept(prettyPrintVisitor)
+        ast.accept(prettyPrintVisitor)
         return prettyPrintVisitor.prettyPrint()
+    }
+
+    fun rewrite() {
+        var rewriteVisitor = RewriteVisitor()
+        currentTree = treeStack.peek().accept(rewriteVisitor)
+        while(prettyPrint(treeStack.peek()) != currentTree?.let { prettyPrint(it) }){
+            treeStack.push(currentTree)
+            rewriteVisitor = RewriteVisitor()
+            currentTree = treeStack.peek().accept(rewriteVisitor)
+        }
+
+        for(t in treeStack) println(prettyPrint(t))
     }
 }
 
