@@ -15,19 +15,25 @@ class Interpreter(private val parser: Parser) {
         return arithmeticVisitor.getVal()
 
         // elseif variable, rewrite
-        // elseif equal, evaluate both sides
+        // elseif equal, evaluate both sides, IF EQUAL IS NOT ROOT, there is a problem, throw error
     }
 
     fun printGraphTree(): String{
-        val printGraphVisitor = PrintGraphTreeVisitor() // visitor which prints the tree
+        val printGraphVisitor = PrintGraphTreeVisitor() // prints the graph
         tree.accept(printGraphVisitor)
         return printGraphVisitor.getGraph()
     }
 
     fun printFlatTree(): String{
-        val printFlatTreeVisitor = PrintFlatTreeVisitor() // visitor which prints the tree
+        val printFlatTreeVisitor = PrintFlatTreeVisitor() // prints the flat tree
         tree.accept(printFlatTreeVisitor)
         return printFlatTreeVisitor.getFlatTree()
+    }
+
+    fun prettyPrint(): String{
+        val prettyPrintVisitor = PrettyPrintVisitor() // prints the expression in infix form.
+        tree.accept(prettyPrintVisitor)
+        return prettyPrintVisitor.prettyPrint()
     }
 }
 

@@ -1,10 +1,13 @@
 package calculator.interpreter.NodeVisitor
 
 import calculator.lexer.Token.BinaryOperatorToken
+import calculator.lexer.Token.OperatorToken
+import calculator.lexer.Token.UnaryOperatorToken
 import calculator.parser.BinaryOperatorNode
 import calculator.parser.OperandNode
 import calculator.parser.UnaryOperatorNode
 import calculator.parser.VariableNode
+import java.util.*
 
 // Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
 class PrintGraphTreeVisitor: NodeVisitor(){
@@ -58,7 +61,6 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 }
 
-// Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
 class PrintFlatTreeVisitor: NodeVisitor(){
     private var str = "Flat tree of abstract syntax tree\n"
 
@@ -74,7 +76,47 @@ class PrintFlatTreeVisitor: NodeVisitor(){
         str +=")"
     }
     override fun visit(node: UnaryOperatorNode){
-        str += "${(node.token as BinaryOperatorToken).verbose}("
+        str += "${(node.token as UnaryOperatorToken).verbose}("
+        node.middle.accept(this)
+        str += ")"
+    }
+
+    override fun visit(node: OperandNode) {
+        str += node.token.value
+    }
+
+    override fun visit(node: VariableNode) {
+        str += node.token.value
+    }
+}
+
+
+class PrettyPrintVisitor: NodeVisitor(){
+    private var str = "Flat tree of abstract syntax tree\n"
+    private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
+
+    fun prettyPrint(): String {
+        return str
+    }
+
+    override fun visit(node: BinaryOperatorNode) {
+        if(parentStack.size != 0 && parentStack.peek().precedence >= (node.token as BinaryOperatorToken).precedence){
+            parentStack.push(node.token)
+            str += "("
+            node.left.accept(this)
+            str += "${(node.token as BinaryOperatorToken).value}"
+            node.right.accept(this)
+            str += ")"
+        }else{
+            parentStack.push(node.token as OperatorToken)
+            node.left.accept(this)
+            str += "${(node.token as BinaryOperatorToken).value}"
+            node.right.accept(this)
+        }
+        parentStack.pop()
+    }
+    override fun visit(node: UnaryOperatorNode){
+        str += "${(node.token as UnaryOperatorToken).verbose}("
         node.middle.accept(this)
         str += ")"
     }

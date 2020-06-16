@@ -107,7 +107,7 @@ class Lexer(private var str: String) {
             else if(ParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(ss == "(" && previous != null && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken) return Multiplication()
+                if(ss == "(" && previous != null && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken && previous !is LeftParenthesisToken) return Multiplication()
 
                 advance(i)
                 return ParenthesisToken.acquire(ss)
