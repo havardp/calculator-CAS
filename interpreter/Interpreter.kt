@@ -6,37 +6,31 @@ import java.util.*
 
 class Interpreter(private val tree: AbstractSyntaxTree) {
     private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
-    private var currentTree: AbstractSyntaxTree? = null
 
     init {
         treeStack.push(tree)
     }
 
-    fun printGraphTree(): String{
+    fun printGraphTree(ast: AbstractSyntaxTree): String{
         val printGraphVisitor = PrintGraphTreeVisitor() // prints the graph
-        tree.accept(printGraphVisitor)
+        ast.accept(printGraphVisitor)
         return printGraphVisitor.getGraph()
     }
 
-    fun printFlatTree(): String{
-        val printFlatTreeVisitor = PrintFlatTreeVisitor() // prints the flat tree
-        tree.accept(printFlatTreeVisitor)
-        return printFlatTreeVisitor.getFlatTree()
-    }
-
-    fun prettyPrint(ast: AbstractSyntaxTree): String{
+    private fun prettyPrint(ast: AbstractSyntaxTree): String{
         val prettyPrintVisitor = PrettyPrintVisitor() // prints the expression in infix form.
-        ast.accept(prettyPrintVisitor)
-        return prettyPrintVisitor.prettyPrint()
+        return ast.accept(prettyPrintVisitor)
     }
 
     fun rewrite() {
-        var rewriteVisitor = RewriteVisitor()
-        currentTree = treeStack.peek().accept(rewriteVisitor)
-        while(prettyPrint(treeStack.peek()) != currentTree?.let { prettyPrint(it) }){
-            treeStack.push(currentTree)
-            rewriteVisitor = RewriteVisitor()
-            currentTree = treeStack.peek().accept(rewriteVisitor)
+        val rewriteVisitor = RewriteVisitor()
+        var rewrittenTree = treeStack.peek().accept(rewriteVisitor)
+
+        // Bit of a hacky solution, check that they are not equal by checking the pretty print string
+        while(prettyPrint(treeStack.peek()) != prettyPrint(rewrittenTree)){
+            treeStack.push(rewrittenTree)
+            rewriteVisitor.resetFinished()
+            rewrittenTree = treeStack.peek().accept(rewriteVisitor)
         }
 
         for(t in treeStack) println(prettyPrint(t))

@@ -9,29 +9,33 @@ import java.math.RoundingMode
 import kotlin.math.*
 
 
-class RewriteVisitor {
+class RewriteVisitor: NodeVisitor() {
     private var finished = false
     private val PRECISION = 4
     private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
 
-    fun visit(node: BinaryOperatorNode): AbstractSyntaxTree {
+    fun resetFinished(){
+        finished = false
+    }
+
+    override fun visit(node: BinaryOperatorNode): AbstractSyntaxTree {
         val left = node.left.accept(this)
         val right = node.right.accept(this)
         if(!finished) return rewriteBinary(node.token, left, right)
         return BinaryOperatorNode(node.token, left, right)
     }
 
-    fun visit(node: UnaryOperatorNode): AbstractSyntaxTree{
+    override fun visit(node: UnaryOperatorNode): AbstractSyntaxTree{
         val middle = node.middle.accept(this)
         if(!finished) return rewriteUnary(node.token, middle)
         return UnaryOperatorNode(node.token, middle)
     }
 
-    fun visit(node: OperandNode): AbstractSyntaxTree {
+    override fun visit(node: OperandNode): AbstractSyntaxTree {
         return node
     }
 
-    fun visit(node: VariableNode): AbstractSyntaxTree {
+    override fun visit(node: VariableNode): AbstractSyntaxTree {
         return node
     }
 
@@ -47,11 +51,12 @@ class RewriteVisitor {
     private fun rewriteBinary(token: Token, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
         if(left.token is OperandToken && right.token is OperandToken) return evaluateBinary(token, left.token, right.token)
-        else if(right.token.value == "0") return left
+        else if(token is Plus && right.token.value == "0") return left
+        else if(token is Plus && left.token.value == "0") return right
         else{
             finished = false
-            return BinaryOperatorNode(token, left, right)
         }
+        return BinaryOperatorNode(token, left, right)
     }
 
     private fun evaluateUnary(operator: Token, middle: OperandToken): AbstractSyntaxTree {

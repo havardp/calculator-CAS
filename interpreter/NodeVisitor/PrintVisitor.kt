@@ -61,71 +61,30 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 }
 
-class PrintFlatTreeVisitor: NodeVisitor(){
-    private var str = "Flat tree of abstract syntax tree\n"
-
-    fun getFlatTree(): String {
-        return str
-    }
-
-    override fun visit(node: BinaryOperatorNode) {
-        str += "${(node.token as BinaryOperatorToken).verbose}("
-        node.left.accept(this)
-        str += ", "
-        node.right.accept(this)
-        str +=")"
-    }
-    override fun visit(node: UnaryOperatorNode){
-        str += "${(node.token as UnaryOperatorToken).verbose}("
-        node.middle.accept(this)
-        str += ")"
-    }
-
-    override fun visit(node: OperandNode) {
-        str += node.token.value
-    }
-
-    override fun visit(node: VariableNode) {
-        str += node.token.value
-    }
-}
-
 
 class PrettyPrintVisitor: NodeVisitor(){
-    private var str = ""
     private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
 
-    fun prettyPrint(): String {
-        return str
-    }
-
-    override fun visit(node: BinaryOperatorNode) {
-        if(parentStack.size != 0 && parentStack.peek().precedence >= (node.token as BinaryOperatorToken).precedence){
+    override fun visit(node: BinaryOperatorNode): String {
+        val str: String = if(parentStack.size != 0 && parentStack.peek().precedence >= (node.token as BinaryOperatorToken).precedence){
             parentStack.push(node.token)
-            str += "("
-            node.left.accept(this)
-            str += "${(node.token as BinaryOperatorToken).value}"
-            node.right.accept(this)
-            str += ")"
+            "(${node.left.accept(this)}${node.token.value}${node.right.accept(this)})"
         }else{
             parentStack.push(node.token as OperatorToken)
-            node.left.accept(this)
-            str += "${(node.token as BinaryOperatorToken).value}"
-            node.right.accept(this)
+            "${node.left.accept(this)}${node.token.value}${node.right.accept(this)}"
         }
         parentStack.pop()
+        return str
     }
-    override fun visit(node: UnaryOperatorNode){
-        str += "${(node.token as UnaryOperatorToken).verbose}("
-        node.middle.accept(this)
-        str += ")"
-    }
-
-    override fun visit(node: OperandNode) {
-        str += node.token.value
+    override fun visit(node: UnaryOperatorNode): String {
+        return "${(node.token as UnaryOperatorToken).verbose}(${node.middle.accept(this)})"
     }
 
-    override fun visit(node: VariableNode) {
-        str += node.token.value
+    override fun visit(node: OperandNode): String {
+       return node.token.value
+    }
+
+    override fun visit(node: VariableNode): String {
+        return node.token.value
     }
 }

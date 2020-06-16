@@ -8,10 +8,10 @@ import calculator.parser.*
 // TODO: Add rewrite visitor, node transformation
 
 abstract class NodeVisitor {
-    abstract fun visit(node: BinaryOperatorNode)
-    abstract fun visit(node: UnaryOperatorNode)
-    abstract fun visit(node: OperandNode)
-    abstract fun visit(node: VariableNode)
+    abstract fun visit(node: BinaryOperatorNode): Any
+    abstract fun visit(node: UnaryOperatorNode): Any
+    abstract fun visit(node: OperandNode): Any
+    abstract fun visit(node: VariableNode): Any
 }
 
 
