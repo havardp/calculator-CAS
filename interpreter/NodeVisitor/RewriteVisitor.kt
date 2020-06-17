@@ -8,7 +8,7 @@ import java.math.MathContext
 import java.math.RoundingMode
 import kotlin.math.*
 
-
+// Preorder traversal??
 class RewriteVisitor: NodeVisitor() {
     private var finished = false
     private val PRECISION = 4
@@ -19,16 +19,12 @@ class RewriteVisitor: NodeVisitor() {
     }
 
     override fun visit(node: BinaryOperatorNode): AbstractSyntaxTree {
-        val left = node.left.accept(this)
-        val right = node.right.accept(this)
-        if(!finished) return rewriteBinary(node.token, left, right)
-        return BinaryOperatorNode(node.token, left, right)
-    }
+        if(finished) return node
+        return rewriteBinary(node.token, node.left, node.right) }
 
     override fun visit(node: UnaryOperatorNode): AbstractSyntaxTree{
-        val middle = node.middle.accept(this)
-        if(!finished) return rewriteUnary(node.token, middle)
-        return UnaryOperatorNode(node.token, middle)
+        if(finished) return node
+        return rewriteUnary(node.token, node.middle)
     }
 
     override fun visit(node: OperandNode): AbstractSyntaxTree {
@@ -42,21 +38,62 @@ class RewriteVisitor: NodeVisitor() {
     private fun rewriteUnary(token: Token, middle: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
         if(middle.token is OperandToken) return evaluateUnary(token, middle.token)
-        else{
-            finished = false
-            return UnaryOperatorNode(token, middle)
-        }
+
+        finished = false
+        val middle = middle.accept(this)
+        return UnaryOperatorNode(token, middle)
     }
 
     private fun rewriteBinary(token: Token, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
-        if(left.token is OperandToken && right.token is OperandToken) return evaluateBinary(token, left.token, right.token)
-        else if(token is Plus && right.token.value == "0") return left
-        else if(token is Plus && left.token.value == "0") return right
-        else{
-            finished = false
+        if(token is Plus){
+            // x + 0 -> x
+            if (right.token.value == "0") return left
+            // 0 + x -> x
+            else if(left.token.value == "0") return right
         }
-        return BinaryOperatorNode(token, left, right)
+        else if(token is Minus){
+            // x - x = 0
+            if(left.equals(right)) return OperandNode(OperandToken("0"))
+            // x - 0 -> x
+            else if (right.token.value == "0") return left
+            // 0 - x -> -x
+            else if(left.token.value == "0") {
+                if(right.token is OperandToken) return evaluateUnary(UnaryMinus(), right.token) // if right is operand, we can just negate it right away
+                return UnaryOperatorNode(UnaryMinus() ,right)
+            }
+        }
+        else if(token is Multiplication){
+            // TODO: need to check that the expression is equal, not that the value is
+            if(left.token is OperandToken && right is BinaryOperatorNode){
+                // x*y/x -> y
+                if(right.token is Divide && right.right.equals(left)) return right.left
+            } else if(right.token is OperandToken && left is BinaryOperatorNode){
+                // y/x*x -> y
+                if(left.token is Divide && left.right.equals(right)) return left.left
+            }
+            // 1 * x -> x
+            else if(left.token.value == "1") return right
+            // x * 1 -> x
+            else if(right.token.value == "1") return left
+            // 0 * x -> 0 and x * 0 -> 0
+            else if(left.token.value == "0" || right.token.value == "0") return OperandNode(OperandToken("0"))
+        }
+        else if(token is Divide){
+            // 0 / x -> 0 TODO: need to make sure x expression is not 0 aswell
+            if(left.token.value == "0") return OperandNode(OperandToken("0"))
+        }
+        else if(token is Power){
+
+        }
+        if(left.token is OperandToken && right.token is OperandToken) return evaluateBinary(token, left.token, right.token)
+        // TODO: if left is operand and right is variable (or vice versa), non terminating rewrite
+
+        // If we have come here and not returned, then we visit child
+        finished = false
+        val leftVisited = left.accept(this)
+        val rightVisited = right.accept(this)
+        return BinaryOperatorNode(token, leftVisited, rightVisited)
     }
 
     private fun evaluateUnary(operator: Token, middle: OperandToken): AbstractSyntaxTree {

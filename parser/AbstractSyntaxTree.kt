@@ -10,6 +10,8 @@ abstract class AbstractSyntaxTree(val token: Token){
     abstract fun accept(visitor: RewriteVisitor): AbstractSyntaxTree // the rewrite visitor which recursively returns the nodes to build the tree
     abstract fun accept(visitor: PrettyPrintVisitor): String
     abstract fun accept(visitor: PrintGraphTreeVisitor) // all other visitors which doesnt return anything
+
+    abstract fun equals(otherTree: AbstractSyntaxTree): Boolean
 }
 
 class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: AbstractSyntaxTree): AbstractSyntaxTree(token){
@@ -21,6 +23,12 @@ class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: 
     }
     override fun accept(visitor: PrintGraphTreeVisitor){
         visitor.visit(this)
+    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
+        if(otherTree is BinaryOperatorNode){
+            if(token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)) return true
+        }
+        return false
     }
 }
 
@@ -34,6 +42,12 @@ class UnaryOperatorNode(token: Token, val middle: AbstractSyntaxTree): AbstractS
     override fun accept(visitor: PrintGraphTreeVisitor){
         visitor.visit(this)
     }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
+        if(otherTree is UnaryOperatorNode){
+            if(token.value == otherTree.token.value && middle.equals(otherTree.middle)) return true
+        }
+        return false
+    }
 }
 
 class OperandNode(token: Token): AbstractSyntaxTree(token){
@@ -46,6 +60,10 @@ class OperandNode(token: Token): AbstractSyntaxTree(token){
     override fun accept(visitor: PrintGraphTreeVisitor){
         visitor.visit(this)
     }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
+        if(otherTree is OperandNode && token.value == otherTree.token.value) return true
+        return false
+    }
 }
 
 class VariableNode(token: Token): AbstractSyntaxTree(token){
@@ -57,6 +75,10 @@ class VariableNode(token: Token): AbstractSyntaxTree(token){
     }
     override fun accept(visitor: PrintGraphTreeVisitor){
         visitor.visit(this)
+    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
+        if(otherTree is VariableNode && token.value == otherTree.token.value) return true
+        return false
     }
 }
 

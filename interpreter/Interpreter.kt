@@ -4,7 +4,7 @@ import calculator.parser.*
 import calculator.interpreter.NodeVisitor.*
 import java.util.*
 
-class Interpreter(private val tree: AbstractSyntaxTree) {
+class Interpreter(tree: AbstractSyntaxTree) {
     private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
 
     init {
@@ -26,8 +26,7 @@ class Interpreter(private val tree: AbstractSyntaxTree) {
         val rewriteVisitor = RewriteVisitor()
         var rewrittenTree = treeStack.peek().accept(rewriteVisitor)
 
-        // Bit of a hacky solution, check that they are not equal by checking the pretty print string
-        while(prettyPrint(treeStack.peek()) != prettyPrint(rewrittenTree)){
+        while(!rewrittenTree.equals(treeStack.peek())){
             treeStack.push(rewrittenTree)
             rewriteVisitor.resetFinished()
             rewrittenTree = treeStack.peek().accept(rewriteVisitor)
