@@ -33,6 +33,7 @@ class Interpreter(tree: AbstractSyntaxTree) {
         }
 
         for(t in treeStack) println(prettyPrint(t))
+        println(printGraphTree(treeStack.peek()))
     }
 }
 

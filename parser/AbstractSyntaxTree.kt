@@ -25,10 +25,7 @@ class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: 
         visitor.visit(this)
     }
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        if(otherTree is BinaryOperatorNode){
-            if(token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)) return true
-        }
-        return false
+        return otherTree is BinaryOperatorNode && token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)
     }
 }
 
@@ -43,10 +40,7 @@ class UnaryOperatorNode(token: Token, val middle: AbstractSyntaxTree): AbstractS
         visitor.visit(this)
     }
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        if(otherTree is UnaryOperatorNode){
-            if(token.value == otherTree.token.value && middle.equals(otherTree.middle)) return true
-        }
-        return false
+        return otherTree is UnaryOperatorNode && token.value == otherTree.token.value && middle.equals(otherTree.middle)
     }
 }
 
@@ -61,8 +55,7 @@ class OperandNode(token: Token): AbstractSyntaxTree(token){
         visitor.visit(this)
     }
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        if(otherTree is OperandNode && token.value == otherTree.token.value) return true
-        return false
+        return otherTree is OperandNode && token.value == otherTree.token.value
     }
 }
 
@@ -77,8 +70,7 @@ class VariableNode(token: Token): AbstractSyntaxTree(token){
         visitor.visit(this)
     }
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        if(otherTree is VariableNode && token.value == otherTree.token.value) return true
-        return false
+        return otherTree is VariableNode && token.value == otherTree.token.value
     }
 }
 
