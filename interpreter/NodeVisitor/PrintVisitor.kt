@@ -59,7 +59,7 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 }
 
-
+// isright handles when to use parenthesis, we only do parenthesis when we are on right side of a left precedence operator??
 class PrettyPrintVisitor: NodeVisitor(){
     private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
     private var isRight = false
@@ -99,6 +99,7 @@ class PrettyPrintVisitor: NodeVisitor(){
         return str
     }
     override fun visit(node: UnaryOperatorNode): String {
+        if(node.token is UnaryPlus || node.token is UnaryMinus) return "${(node.token as UnaryOperatorToken).verbose}${node.middle.accept(this)}"
         return "${(node.token as UnaryOperatorToken).verbose}(${node.middle.accept(this)})"
     }
 

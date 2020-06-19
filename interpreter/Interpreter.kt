@@ -31,7 +31,7 @@ class Interpreter(tree: AbstractSyntaxTree) {
             rewriteVisitor.resetFinished()
             rewrittenTree = treeStack.peek().accept(rewriteVisitor)
         }
-
+        // TODO with explanation, for( until treeStack.size -1) get pretty print and explanation, continue if pretty print is identical ASSOCIATIVITY
         for(t in treeStack) println(prettyPrint(t))
         println(printGraphTree(treeStack.peek()))
     }
