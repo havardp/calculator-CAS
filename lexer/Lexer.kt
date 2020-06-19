@@ -99,6 +99,7 @@ class Lexer(private var str: String) {
 
             // check if it is a unary operator (mostly functions)
             else if(UnaryOperatorToken.assert(ss)){
+                if(previous is RightParenthesisToken || previous is VariableToken || previous is OperandToken) return Multiplication()
                 advance(i)
                 return UnaryOperatorToken.acquire(ss)
             }

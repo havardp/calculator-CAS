@@ -1,8 +1,6 @@
 package calculator.interpreter.NodeVisitor
 
-import calculator.lexer.Token.BinaryOperatorToken
-import calculator.lexer.Token.OperatorToken
-import calculator.lexer.Token.UnaryOperatorToken
+import calculator.lexer.Token.*
 import calculator.parser.BinaryOperatorNode
 import calculator.parser.OperandNode
 import calculator.parser.UnaryOperatorNode
@@ -64,14 +62,38 @@ class PrintGraphTreeVisitor: NodeVisitor(){
 
 class PrettyPrintVisitor: NodeVisitor(){
     private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
+    private var isRight = false
 
     override fun visit(node: BinaryOperatorNode): String {
-        val str: String = if(parentStack.size != 0 && parentStack.peek().precedence >= (node.token as BinaryOperatorToken).precedence){
+        var str = ""
+        if(parentStack.size != 0 && (parentStack.peek().precedence > (node.token as BinaryOperatorToken).precedence
+                || (parentStack.peek().precedence == node.token.precedence
+                        && (parentStack.peek() is Minus || parentStack.peek() is Divide)))){
+            val previous = parentStack.peek()
             parentStack.push(node.token)
-            "(${node.left.accept(this)}${node.token.value}${node.right.accept(this)})"
+            if(isRight || previous.precedence > node.token.precedence){
+                isRight = false
+                val left = "(${node.left.accept(this)}"
+                isRight = true
+                val right = "${node.token.value}${node.right.accept(this)})"
+                isRight = false
+                str = left + right
+            }else {
+                isRight = false
+                val left = "${node.left.accept(this)}"
+                isRight = true
+                val right = "${node.token.value}${node.right.accept(this)}"
+                isRight = false
+                str = left + right
+            }
         }else{
+            isRight = false
             parentStack.push(node.token as OperatorToken)
-            "${node.left.accept(this)}${node.token.value}${node.right.accept(this)}"
+            val left = "${node.left.accept(this)}"
+            isRight = true
+            val right = "${node.token.value}${node.right.accept(this)}"
+            isRight = false
+            str = left + right
         }
         parentStack.pop()
         return str
