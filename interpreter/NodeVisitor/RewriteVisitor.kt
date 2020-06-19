@@ -126,8 +126,9 @@ class RewriteVisitor: NodeVisitor() {
                     // var + (var + exp) -> exp + (var + var)
                     return BinaryOperatorNode(token, right.right, BinaryOperatorNode(token, right.left, left))
                 }
+
             }
-            else if (left.token is Minus){
+            if (right.token is Minus){
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || left.token is VariableToken && right.left.token !is VariableToken && right.right.token is VariableToken){
                     // op + (exp - op) -> exp + (op - op)
@@ -157,8 +158,26 @@ class RewriteVisitor: NodeVisitor() {
             }
         }
         // exp1 * exp2 + exp1 -> exp1 * exp2 + exp1 * 1 (so that we can use distributivity rules above)
-        if(left is BinaryOperatorNode && left.token is Multiplication && right is BinaryOperatorNode){
+        if(left is BinaryOperatorNode && left.token is Multiplication && (right is BinaryOperatorNode || right is UnaryOperatorNode)){
             if(left.right.equals(right)) return BinaryOperatorNode(token, left, BinaryOperatorNode(Multiplication(), right, OperandNode(OperandToken("1"))))
+            if(left.left.equals(right)) return BinaryOperatorNode(token, left, BinaryOperatorNode(Multiplication(), right, OperandNode(OperandToken("1"))))
+        }
+        // exp1 + exp2 * exp1 -> exp1 * exp2 + exp1 * 1 (so that we can use distributivity rules above)
+        if(right is BinaryOperatorNode && right.token is Multiplication && (left is BinaryOperatorNode || left is UnaryOperatorNode)){
+            if(right.right.equals(right)) return BinaryOperatorNode(token, right, BinaryOperatorNode(Multiplication(), left, OperandNode(OperandToken("1"))))
+            if(right.left.equals(right)) return BinaryOperatorNode(token, right, BinaryOperatorNode(Multiplication(), left, OperandNode(OperandToken("1"))))
+        }
+
+        // exp * var + exp + var -> exp * var + var + exp
+        if(right.token is VariableToken && left is BinaryOperatorNode && left.token is Plus && left.left is BinaryOperatorNode && left.left.token is Multiplication){
+            if(left.left.right.token is VariableToken) {
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+            }
+        }
+        // exp * var + exp + exp * var -> exp * var + exp * var + exp COMMUTATIVITY
+        if(left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Multiplication && left.left is BinaryOperatorNode && left.left.token is Multiplication){
+            if(right.right.token is VariableToken && left.left.right.token is VariableToken)
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
         }
 
         finished = false
@@ -225,7 +244,7 @@ class RewriteVisitor: NodeVisitor() {
                     return BinaryOperatorNode(right.token, UnaryOperatorNode(UnaryMinus(), right.right), BinaryOperatorNode(token, left, right.left))
                 }
             }
-            else if (left.token is Minus){
+            else if (right.token is Minus){
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || left.token is VariableToken && right.left.token !is VariableToken && right.right.token is VariableToken){
                     // op - (exp - op) -> -exp + (op + op)
@@ -240,6 +259,21 @@ class RewriteVisitor: NodeVisitor() {
                 }
             }
         }
+
+        // Distributivity
+        if (left is BinaryOperatorNode && right is BinaryOperatorNode){
+            if(left.token is Multiplication && right.token is Multiplication){
+                // exp1 * exp2 - exp1 * exp3 -> exp1(exp2 - exp3)
+                if(left.left.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
+                // exp1 * exp2 - exp3 * exp1 -> exp1(exp2 - exp3)
+                if(left.left.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.left))
+                // exp2 * exp1 - exp1 * exp2 -> exp1(exp2 - exp3)
+                if(left.right.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.right))
+                // exp1 * exp2 - exp3 * exp1 -> exp1(exp2 - exp3)
+                if(left.right.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.left))
+            }
+        }
+
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
@@ -261,6 +295,29 @@ class RewriteVisitor: NodeVisitor() {
         else if(right.token.value == "1") return left
         // 0 * exp -> 0 and exp * 0 -> 0
         else if(left.token.value == "0" || right.token.value == "0") return OperandNode(OperandToken("0"))
+        // Commutativity
+        if(left is BinaryOperatorNode){
+            if (left.token is Multiplication){
+                if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
+                        || (right.token is VariableToken && left.left.token is VariableToken && left.right.token !is VariableToken)){
+                    // (op * exp) * op -> exp * (op * op)
+                    // (var * exp) * var -> exp * (var * var)
+                    // and more, because we rewrite operand to left
+                    return BinaryOperatorNode(token, left.right, BinaryOperatorNode(token, left.left, right))
+                }
+            }
+        }
+        if(right is BinaryOperatorNode){
+            if (right.token is Multiplication){
+                if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
+                        || (left.token is VariableToken && right.left.token is VariableToken && right.right.token !is VariableToken)){
+                    // op * (op * exp) -> exp * (op * op)
+                    // var * (var * exp) -> exp * (var * var)
+                    // and more, because we rewrite operand to left
+                    return BinaryOperatorNode(token, right.right, BinaryOperatorNode(token, right.left, left))
+                }
+            }
+        }
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
@@ -271,6 +328,11 @@ class RewriteVisitor: NodeVisitor() {
         if(left.token.value == "1" && right is BinaryOperatorNode && right.token is Divide && right.left.token.value == "1") return right.right
         // 0 / exp -> 0 TODO: need to make sure x expression is not 0 aswell
         if(left.token.value == "0") return OperandNode(OperandToken("0"))
+        // (exp1 * exp2) / exp1 -> exp2
+        if(left is BinaryOperatorNode && left.token is Multiplication){
+            if(left.left.equals(right)) return left.right
+            if(left.right.equals(right)) return left.right
+        }
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
