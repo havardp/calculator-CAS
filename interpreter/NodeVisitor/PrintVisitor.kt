@@ -5,13 +5,14 @@ import calculator.parser.BinaryOperatorNode
 import calculator.parser.OperandNode
 import calculator.parser.UnaryOperatorNode
 import calculator.parser.VariableNode
+import java.lang.ArithmeticException
 import java.util.*
 
 // Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
 class PrintGraphTreeVisitor: NodeVisitor(){
-    var list = arrayListOf<String>()
-    var indentation = 12 //How many spaces of indentation there should be on a given line
-    var level = 0        //Which "level" in the graph we are at
+    private var list = arrayListOf<String>()
+    private var indentation = 12 //How many spaces of indentation there should be on a given line
+    private var level = 0        //Which "level" in the graph we are at
 
     fun getGraph(): String {
         var str = "Graph of abstract syntax tree\n"
@@ -22,7 +23,7 @@ class PrintGraphTreeVisitor: NodeVisitor(){
         return str
     }
 
-    fun createNewLevel(length: Int){
+    private fun createNewLevel(length: Int){
         if(list.size <= level) {
             list.add("")
             for(i in 0 until indentation+ 1 - length) list[level] += " "
@@ -80,7 +81,7 @@ class PrettyPrintVisitor: NodeVisitor(){
                 str = left + right
             }else {
                 isRight = false
-                val left = "${node.left.accept(this)}"
+                val left = node.left.accept(this)
                 isRight = true
                 val right = "${node.token.value}${node.right.accept(this)}"
                 isRight = false
@@ -89,7 +90,7 @@ class PrettyPrintVisitor: NodeVisitor(){
         }else{
             isRight = false
             parentStack.push(node.token as OperatorToken)
-            val left = "${node.left.accept(this)}"
+            val left = node.left.accept(this)
             isRight = true
             val right = "${node.token.value}${node.right.accept(this)}"
             isRight = false
@@ -104,7 +105,11 @@ class PrettyPrintVisitor: NodeVisitor(){
     }
 
     override fun visit(node: OperandNode): String {
-       return node.token.value
+        return try {
+            node.token.value.toBigDecimal().toBigIntegerExact().toString()
+        }catch (e: ArithmeticException){
+            node.token.value
+        }
     }
 
     override fun visit(node: VariableNode): String {

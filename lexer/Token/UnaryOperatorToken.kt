@@ -48,7 +48,7 @@ data class UnaryMinus(override val value: String = "-", override val precedence:
 data class UnaryPlus(override val value: String = "+", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = ""): UnaryOperatorToken()
 
 data class Sin(override val value: String = "sin", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "SIN"): UnaryOperatorToken()
-data class ArcSin(override val value: String = "arcsin", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "ARCSIM"): UnaryOperatorToken()
+data class ArcSin(override val value: String = "arcsin", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "ARCSIN"): UnaryOperatorToken()
 data class Cos(override val value: String = "cos", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "COS"): UnaryOperatorToken()
 data class ArcCos(override val value: String = "arccos", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "ARCCOS"): UnaryOperatorToken()
 data class Tan(override val value: String = "tan", override val precedence: Int = Int.MAX_VALUE, override val verbose: String = "TAN"): UnaryOperatorToken()
