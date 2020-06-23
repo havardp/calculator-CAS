@@ -2,6 +2,7 @@ package calculator.interpreter.NodeVisitor
 
 import calculator.exception.InvalidSyntaxException
 import calculator.exception.NotAnOperatorException
+import calculator.interpreter.Interpreter
 import calculator.lexer.Token.*
 import calculator.parser.*
 import java.math.MathContext
@@ -20,6 +21,11 @@ class RewriteVisitor: NodeVisitor() {
     }
 
     override fun visit(node: BinaryOperatorNode): AbstractSyntaxTree {
+        // if equal is child of equal, then there was >1 equal in the equation, and it is not valid
+        if(node.token is Equal && (node.left.token is Equal || node.right.token is Equal)) throw InvalidSyntaxException("Cannot have more than one equal operator")
+        // if equal is child of another node, then a equal operator was inside a parenthesis and is not the root of the tree
+        if(node.left.token is Equal || node.right.token is Equal) throw InvalidSyntaxException("Cannot have equal operator in parenthesis")
+
         if (finished) return node
         val rewrittenNode = when (node.token) {
             is Plus -> rewritePlus(node.token, node.left, node.right)
@@ -27,6 +33,7 @@ class RewriteVisitor: NodeVisitor() {
             is Multiplication -> rewriteMultiplication(node.token, node.left, node.right)
             is Divide -> rewriteDivide(node.token, node.left, node.right)
             is Power -> rewritePower(node.token, node.left, node.right)
+            is Equal -> rewriteEqual(node.token, node.left, node.right)
             else -> throw NotAnOperatorException("tried to handle non binary operator as binary operator")
         }
         // If finished is true here that means that we did a rewrite in the code above, thus we return the rewritten node
@@ -38,6 +45,8 @@ class RewriteVisitor: NodeVisitor() {
     }
 
     override fun visit(node: UnaryOperatorNode): AbstractSyntaxTree{
+        if(node.middle.token is Equal) throw InvalidSyntaxException("Cannot have equal operator in a unary operator")
+
         if(finished) return node
         val rewrittenNode = rewriteUnary(node.token, node.middle)
 
@@ -57,81 +66,266 @@ class RewriteVisitor: NodeVisitor() {
         return node
     }
 
+    private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
+        finished = true
+
+        // variable on both sides
+        if(left.containsVariable() && right.containsVariable()){
+
+        }
+
+        // variable only on left side
+        if(left.containsVariable()){
+            if(left is BinaryOperatorNode){
+                if(left.token is Plus){
+                    if(!left.left.containsVariable())
+                        return BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Minus(), right, left.left))
+                }
+            }
+        }
+
+        // variable only on right side
+        if(right.containsVariable()){
+
+        }
+
+        finished = false
+        return BinaryOperatorNode(Equal(), left, right)
+    }
+
     // exp is expression, basically a abstract syntax tree, a node
     // op is operand
     // var is variable
     private fun rewritePlus(token: Token, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
-        // exp + 0 -> exp
+        /**
+         *   IDENTITY: remove redundant plus zero
+         *       +       ->      exp
+         *    exp  0     ->
+         */
         if (right.token.value == "0") return left
-        // 0 + exp -> exp
+
+        /**
+         *   IDENTITY: remove redundant plus zero
+         *       +       ->      exp
+         *     0  exp    ->
+         */
         if(left.token.value == "0") return right
-        // exp + exp -> 2 * exp (not operand)
+
+        /**
+         *   DISTRIBUTION: Adds two equal expressions together (not operands)
+         *        +        ->        *
+         *   exp1  exp1    ->      2  exp1
+         */
         if(left !is OperandNode && left.equals(right))
             return BinaryOperatorNode(Multiplication(), OperandNode(OperandToken("2")), left)
-        // exp + -exp -> exp - exp
-        if(right is UnaryOperatorNode && right.token is UnaryMinus && right.middle !is UnaryOperatorNode) return BinaryOperatorNode(Minus(), left, right.middle)
 
-        // handles commutativity and associativity
+        /**
+         *   change unary minus to actual minus
+         *       +          ->         -
+         *    exp1 (-)      ->    exp1  exp2
+         *        exp2
+         */
+        if(right is UnaryOperatorNode && right.token is UnaryMinus && right.middle !is UnaryOperatorNode)
+            return BinaryOperatorNode(Minus(), left, right.middle)
+
+        /**
+         *   ADDITIVE INVERSE
+         *       +          ->        0
+         *    (-) exp1
+         *   exp1
+         */
+        if(left is UnaryOperatorNode && left.token is UnaryMinus && left.middle.equals(right))
+            return OperandNode(OperandToken("0"))
+
+        /** COMMUTATIVITY && ASSOCIATIVITY */
         if(left is BinaryOperatorNode){
             if (left.token is Plus){
+
+                /**
+                 *   ASSOCIATIVITY: move variable and operands together so we can evaluate them
+                 *   where exp1 = exp3 && exp2 != exp3
+                 *         +            ->           +
+                 *      +    exp1       ->        +    exp2
+                 *  exp2  exp3          ->   exp1  exp3
+                 */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
-                        || right.token is VariableToken && left.left.token !is VariableToken && left.right.token is VariableToken){
-                    // (exp + op) + op -> exp + (op + op)
-                    // (exp + var) + var -> exp + (var + var)
-                    return BinaryOperatorNode(token, left.left, BinaryOperatorNode(token, left.right, right))
-                }
+                        || (right.equals(left.right) && !right.equals(left.left)))
+                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left.right, right), left.left)
+
+                /**
+                 *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
+                 *   where exp2 = exp3 && exp1 != exp2
+                 *           +             ->           +
+                 *        +    exp1        ->        +    exp3
+                 *   exp2  exp3            ->   exp2  exp1
+                 */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
-                        || (right.token is VariableToken && left.left.token is VariableToken && left.right.token !is VariableToken)){
-                    // (op + exp) + op -> exp + (op + op)
-                    // (var + exp) + var -> exp + (var + var)
-                    return BinaryOperatorNode(token, left.right, BinaryOperatorNode(token, left.left, right))
-                }
-                if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right))
-                    // (exp1 + exp2 * exp3) + exp3 -> exp1 + (exp2 * exp3 + exp3)
+                        || (right.equals(left.left) && !right.equals(left.right)))
+                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left.left, right), left.right)
+
+                /**
+                 *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where exp3 = exp1 || exp4 = exp1 and none of the factors in left.left is equal to factors in left.right
+                 *           +             ->           +
+                 *        +    exp1        ->      exp2   +
+                 *   exp2   *              ->            *  exp1
+                 *      exp3 exp4          ->       exp3  exp4
+                 */
+                if(left.right is BinaryOperatorNode && left.right.token is Multiplication
+                        && right.token !is Multiplication
+                        && (left.right.right.equals(right) || left.right.left.equals(right))
+                        && (left.left.token !is Multiplication
+                                || !((left.left as BinaryOperatorNode).left.equals(left.right.left)
+                                    || left.left.left.equals(left.right.right)
+                                    || left.left.right.equals(left.right.left)
+                                    || left.left.right.equals(left.right.right))))
                     return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+
+                /**
+                 *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where there is a common factor among the two multiplication nodes (and there isn't one between between left.left and left.right)
+                 *            +             ->           +
+                 *        +        *        ->      exp1     +
+                 *   exp1   *  exp2  exp3   ->          *         *
+                 *     exp4  exp5           ->     exp4  exp5 exp2 exp3
+                 */
                 if(right is BinaryOperatorNode && right.token is Multiplication
-                        && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right.right))
-                    // (exp1 + exp2 * exp3) + exp3 * exp4 -> exp1 + (exp2 * exp3 + exp3 * exp4)
+                        && left.right is BinaryOperatorNode && left.right.token is Multiplication
+                        && (left.right.right.equals(right.right) || left.right.left.equals(right.right)
+                                || left.right.right.equals(right.left) || left.right.left.equals(right.left))
+                        && (left.left.token !is Multiplication
+                                || !((left.left as BinaryOperatorNode).left.equals(left.right.right)
+                                || left.left.left.equals(left.right.left)
+                                || left.left.right.equals(left.right.right)
+                                || left.left.right.equals(left.right.left))))
                     return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                // TODO check if left.left is multiplication as well 2sin(x)+3x+4sin(x)
+
             }
             else if (left.token is Minus){
+                /**
+                 *   COMMUTATIVITY && ASSOCIATIVITY: move variable and operands together so we can evaluate them
+                 *   where exp3 = exp1 && exp2 != exp1
+                 *         +            ->           +
+                 *       -    exp1      ->       exp2    -
+                 *  exp2  exp3          ->           exp1  exp3
+                 */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
-                        || right.token is VariableToken && left.left.token !is VariableToken && left.right.token is VariableToken){
-                    // (exp - op) + op -> exp + (op - op)
-                    // (exp - var) + var -> exp + (var - var)
+                        || (right.equals(left.right) && !right.equals(left.left)))
                     return BinaryOperatorNode(token, left.left, BinaryOperatorNode(left.token, right, left.right))
-                }
+
+                /**
+                 *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
+                 *           +            ->           -
+                 *        -    exp1       ->        +    exp3
+                 *   exp2  exp3           ->   exp1   exp2
+                 */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
-                        || (right.token is VariableToken && left.left.token is VariableToken && left.right.token !is VariableToken)){
-                    // (op - exp) + op -> (op + op) - exp
-                    // (var - exp) + var -> (var + var) - exp
+                        || (right.equals(left.left) && !right.equals(left.right)))
                     return BinaryOperatorNode(left.token, BinaryOperatorNode(token, right, left.left), left.right)
-                }
-                if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right))
-                    // (exp1 - exp2 * exp3) + exp3 -> exp1 + (-exp2 * exp3 + exp3)
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), left.right), right))
+
+                /**
+                 *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where exp3 = exp1 || exp4 = exp1
+                 *           +             ->           +
+                 *        -    exp1        ->      exp2   -
+                 *   exp2   *              ->           exp1  *
+                 *      exp3 exp4          ->            exp3  exp4
+                 */
+                if(left.right is BinaryOperatorNode && left.right.token is Multiplication
+                        && right.token !is Multiplication
+                        && (left.right.right.equals(right) || left.right.left.equals(right))
+                        && (left.left.token !is Multiplication
+                                || !((left.left as BinaryOperatorNode).left.equals(left.right.left)
+                                || left.left.left.equals(left.right.right)
+                                || left.left.right.equals(left.right.left)
+                                || left.left.right.equals(left.right.right))))
+                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+
+                /**
+                 *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where there is a common factor among the two multiplication nodes
+                 *            +             ->           +
+                 *        -        *        ->      exp1     +
+                 *   exp1   *  exp2  exp3   ->          *         *
+                 *     exp4  exp5           ->     exp4  exp5 exp2 exp3
+                 */
                 if(right is BinaryOperatorNode && right.token is Multiplication
-                        && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right.right))
-                // (exp1 - exp2 * exp3) + exp3 * exp4 -> exp1 + (exp3 * exp4 - exp2 * exp3)
+                        && left.right is BinaryOperatorNode && left.right.token is Multiplication
+                        && (left.right.right.equals(right.right) || left.right.left.equals(right.right)
+                                || left.right.right.equals(right.left) || left.right.left.equals(right.left))
+                        && (left.left.token !is Multiplication
+                                || !((left.left as BinaryOperatorNode).left.equals(left.right.right)
+                                || left.left.left.equals(left.right.left)
+                                || left.left.right.equals(left.right.right)
+                                || left.left.right.equals(left.right.left))))
                     return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
             }
         }
+
+        /** COMMUTATIVITY && ASSOCIATIVITY */
         if(right is BinaryOperatorNode){
             if (right.token is Plus){
+                /**
+                 *   COMMUTATIVITY && ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
+                 *   where exp1 = exp3 && exp1 != exp2
+                 *         +             ->           +
+                 *    exp1   +           ->     exp2    +
+                 *       exp2  exp3      ->         exp1  exp3
+                 */
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
-                        || left.token is VariableToken && right.left.token !is VariableToken && right.right.token is VariableToken){
-                    // op + (exp + op) -> exp + (op + op)
-                    // var + (exp + var) -> exp + (var + var)
+                        || (left.equals(right.right) && !left.equals(right.left)))
                     return BinaryOperatorNode(token, right.left, BinaryOperatorNode(token, right.right, left))
-                }
+
+                /** 
+                 *   ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
+                 *   where exp1 = exp2 && exp1 != exp3
+                 *         +             ->           +
+                 *    exp1   +           ->        +   exp3
+                 *       exp2  exp3      ->    exp1  exp2
+                 */
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
-                        || (left.token is VariableToken && right.left.token is VariableToken && right.right.token !is VariableToken)){
-                    // op + (op + exp) -> exp + (op + op)
-                    // var + (var + exp) -> exp + (var + var)
-                    return BinaryOperatorNode(token, right.right, BinaryOperatorNode(token, right.left, left))
-                }
+                        || (left.equals(right.left) && !left.equals(right.right)))
+                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left, right.left), right.right)
+
+                /**
+                 *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where exp3 = exp1 || exp4 = exp1 and none of the factors in right.left is equal to factors in right.right
+                 *           +              ->           +
+                 *       exp1  +            ->      exp2   +
+                 *         exp2  *          ->          exp1 *
+                 *           exp3  exp4     ->           exp3  exp4
+                 */
+                if(right.right is BinaryOperatorNode && right.right.token is Multiplication
+                        && left.token !is Multiplication
+                        && (right.right.right.equals(left) || right.right.left.equals(left))
+                        && (right.left.token !is Multiplication
+                                || !((right.left as BinaryOperatorNode).left.equals(right.right.left)
+                                || right.left.left.equals(right.right.right)
+                                || right.left.right.equals(right.right.left)
+                                || right.left.right.equals(right.right.right))))
+                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+
+                /** 2sin(x)+ (x+3sin(x))
+                 *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
+                 *   Where there is a common factor among the two multiplication nodes (and there isn't one between between right.left and right.right)
+                 *             +               ->           +
+                 *       *           +         ->      exp3     +
+                 *   exp1  exp2  exp3  *       ->          *         *
+                 *                 exp4 exp5   ->     exp1  exp2 exp4 exp5
+                 */
+                if(left is BinaryOperatorNode && left.token is Multiplication
+                        && right.right is BinaryOperatorNode && right.right.token is Multiplication
+                        && (right.right.right.equals(left.right) || right.right.left.equals(left.right)
+                                || right.right.right.equals(left.left) || right.right.left.equals(left.left))
+                        && (right.left.token !is Multiplication
+                                || !((right.left as BinaryOperatorNode).left.equals(right.right.right)
+                                || right.left.left.equals(right.right.left)
+                                || right.left.right.equals(right.right.right)
+                                || right.left.right.equals(right.right.left))))
+                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
 
             }
             if (right.token is Minus){
@@ -150,6 +344,13 @@ class RewriteVisitor: NodeVisitor() {
             }
         }
 
+        //TODO this is (2+x)+(3+x), need to do this 4 times, so that we check +- -+ and -- aswell
+        if (left is BinaryOperatorNode && right is BinaryOperatorNode){
+            if(left.token is Plus && right.token is Plus
+                    && left.left is OperandNode && left.right !is OperandNode && right.left is OperandNode && right.right !is OperandNode)
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right.left), BinaryOperatorNode(Plus(), left.right, right.right))
+        }
+
         // Distributivity
         if (left is BinaryOperatorNode && right is BinaryOperatorNode){
             if(left.token is Multiplication && right.token is Multiplication){
@@ -163,9 +364,9 @@ class RewriteVisitor: NodeVisitor() {
                 if(left.right.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.left))
             }
         }
+
         // exp1 * exp2 + exp1 -> exp1 * exp2 + exp1 * 1 (so that we can use distributivity rules above)
         if(left is BinaryOperatorNode && left.token is Multiplication && right !is OperandNode){
-            println("${token.value} , ${left.token.value} , ${right.token.value}")
             if(left.right.equals(right)) return BinaryOperatorNode(token, left, BinaryOperatorNode(Multiplication(), right, OperandNode(OperandToken("1"))))
             if(left.left.equals(right)) return BinaryOperatorNode(token, left, BinaryOperatorNode(Multiplication(), right, OperandNode(OperandToken("1"))))
         }
@@ -173,6 +374,15 @@ class RewriteVisitor: NodeVisitor() {
         if(right is BinaryOperatorNode && right.token is Multiplication && left !is OperandNode){
             if(right.right.equals(left)) return BinaryOperatorNode(token, right, BinaryOperatorNode(Multiplication(), left, OperandNode(OperandToken("1"))))
             if(right.left.equals(left)) return BinaryOperatorNode(token, right, BinaryOperatorNode(Multiplication(), left, OperandNode(OperandToken("1"))))
+        }
+        // exp1 + exp2 + exp2 * exp3 -> exp1 + exp2 * 1 + exp2 * exp3
+        if(left is BinaryOperatorNode && right is BinaryOperatorNode && right.token is Multiplication){
+            if(left.token is Plus){
+                if(left.left !is OperandNode && right.right !is OperandNode && (left.left.equals(right.right) || left.left.equals(right.left)))
+                    return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Multiplication(), left.left, OperandNode(OperandToken("1")))), right)
+                if(left.left !is OperandNode && right.right !is OperandNode && (left.right.equals(right.right) || left.right.equals(right.left)))
+                    return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Multiplication(), left.right, OperandNode(OperandToken("1")))), right)
+            }
         }
 
         // exp * var + exp + var -> exp * var + var + exp
@@ -229,7 +439,7 @@ class RewriteVisitor: NodeVisitor() {
             return UnaryOperatorNode(UnaryMinus() ,right)
         }
         // exp - -exp -> exp + exp
-        if(right is UnaryOperatorNode && right.token is UnaryMinus && right.middle !is UnaryOperatorNode) return BinaryOperatorNode(Plus(), left, right.middle)
+        if(right is UnaryOperatorNode && right.token is UnaryMinus && left !is UnaryOperatorNode) return BinaryOperatorNode(Plus(), left, right.middle)
 
         if(left is BinaryOperatorNode){
             if (left.token is Plus){
@@ -248,9 +458,16 @@ class RewriteVisitor: NodeVisitor() {
                 if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right))
                     // (exp1 + exp2 * exp3) - exp3 -> exp1 + (exp2 * exp3 - exp3)
                     return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.left.equals(right))
+                // (exp1 + exp2 * exp3) - exp3 -> exp1 + (exp2 * exp3 - exp3)
+                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                 if(right is BinaryOperatorNode && right.token is Multiplication
                         && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right.right))
                     // (exp1 + exp2 * exp3) - exp3 * exp4 -> exp1 + (exp2 * exp3 - exp3 * exp4)
+                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                if(right is BinaryOperatorNode && right.token is Multiplication
+                        && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.left.equals(right.right))
+                // (exp1 + exp2 * exp3) - exp3 * exp4 -> exp1 + (exp2 * exp3 - exp3 * exp4)
                     return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
             }
             else if (left.token is Minus){
@@ -269,8 +486,15 @@ class RewriteVisitor: NodeVisitor() {
                 if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right))
                     // (exp1 - exp2 * exp3) - exp3 -> exp1 - (exp2 * exp3 + exp3)
                     return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                if(left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.left.equals(right))
+                    // (exp1 - exp2 * exp3) - exp3 -> exp1 - (exp2 * exp3 + exp3)
+                    return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                 if(right is BinaryOperatorNode && right.token is Multiplication
                         && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.right.equals(right.right))
+                    // (exp1 - exp2 * exp3) - exp3 * exp4 -> exp1 - (exp3 * exp4 + exp2 * exp3)
+                    return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                if(right is BinaryOperatorNode && right.token is Multiplication
+                        && left.right is BinaryOperatorNode && left.right.token is Multiplication && left.right.left.equals(right.right))
                     // (exp1 - exp2 * exp3) - exp3 * exp4 -> exp1 - (exp3 * exp4 + exp2 * exp3)
                     return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
             }
@@ -304,6 +528,13 @@ class RewriteVisitor: NodeVisitor() {
                     return BinaryOperatorNode(Plus(), right.right, BinaryOperatorNode(token, left, right.left))
                 }
             }
+        }
+
+        // handles right associative tree (expressions with parenthesis) for example op + exp + (op + exp)
+        if (left is BinaryOperatorNode && right is BinaryOperatorNode){
+                if(left.token is Plus && right.token is Plus
+                        && left.left is OperandNode && left.right !is OperandNode && right.left is OperandNode && right.right !is OperandNode)
+                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, UnaryOperatorNode(UnaryMinus(), right.left)), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), left.right), right.right))
         }
 
         // Distributivity
@@ -390,9 +621,6 @@ class RewriteVisitor: NodeVisitor() {
             if(left.token is Divide && left.right.equals(right)) return left.left
         }
         if ((left.token is VariableToken || left.token is UnaryOperatorToken) && right.token is OperandToken) return BinaryOperatorNode(token, right, left)
-        // (negative op) * exp -> -((positive op) * exp)
-        if(left.token is OperandToken && left.token.value.toBigDecimal() < 0.toBigDecimal())
-            return UnaryOperatorNode(UnaryMinus(), BinaryOperatorNode(token, UnaryOperatorNode(UnaryMinus(), left), right))
         // 1 * exp -> exp
         else if(left.token.value == "1") return right
         // exp * 1 -> exp
@@ -485,7 +713,10 @@ class RewriteVisitor: NodeVisitor() {
         if(token is UnaryPlus) return middle
         // --exp -> exp
         if(token is UnaryMinus && middle is UnaryOperatorNode && middle.token is UnaryMinus) return middle.middle
-
+        if(token is UnaryMinus && middle is BinaryOperatorNode){
+            if(middle.token is Multiplication) return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), middle.left), middle.right)
+            // if(middle.token is Plus) return BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), middle.left), UnaryOperatorNode(UnaryMinus(), middle.right))
+        }
         // Inverses
         if(middle is UnaryOperatorNode
                 && ((token is Sin && middle.token is ArcSin)

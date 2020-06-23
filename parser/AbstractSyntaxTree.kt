@@ -11,6 +11,7 @@ abstract class AbstractSyntaxTree(val token: Token){
     abstract fun accept(visitor: PrintGraphTreeVisitor)
 
     abstract fun equals(otherTree: AbstractSyntaxTree): Boolean
+    abstract fun containsVariable(): Boolean
 }
 
 class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: AbstractSyntaxTree): AbstractSyntaxTree(token){
@@ -25,6 +26,9 @@ class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: 
     }
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
         return otherTree is BinaryOperatorNode && token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)
+    }
+    override fun containsVariable(): Boolean{
+        return left.containsVariable() || right.containsVariable()
     }
 }
 
@@ -41,6 +45,9 @@ class UnaryOperatorNode(token: Token, val middle: AbstractSyntaxTree): AbstractS
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
         return otherTree is UnaryOperatorNode && token.value == otherTree.token.value && middle.equals(otherTree.middle)
     }
+    override fun containsVariable(): Boolean{
+        return middle.containsVariable()
+    }
 }
 
 class OperandNode(token: Token): AbstractSyntaxTree(token){
@@ -56,6 +63,7 @@ class OperandNode(token: Token): AbstractSyntaxTree(token){
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
         return otherTree is OperandNode && token.value == otherTree.token.value
     }
+    override fun containsVariable(): Boolean = false
 }
 
 class VariableNode(token: Token): AbstractSyntaxTree(token){
@@ -71,5 +79,6 @@ class VariableNode(token: Token): AbstractSyntaxTree(token){
     override fun equals(otherTree: AbstractSyntaxTree): Boolean{
         return otherTree is VariableNode && token.value == otherTree.token.value
     }
+    override fun containsVariable(): Boolean = true
 }
 
