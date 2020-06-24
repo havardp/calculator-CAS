@@ -33,7 +33,9 @@ class Interpreter(tree: AbstractSyntaxTree) {
 
             // just so the program stops whenever we have an infinite loop in rewrite visitor
             // There shouldn't be one but just in case
+            println(printGraphTree(rewrittenTree))
             counter++
+            //println(printGraphTree(rewrittenTree))
             if(counter > 1000) {
                 println("counter greater than 1000, loop in code rewrite visitor probably")
                 break

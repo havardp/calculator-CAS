@@ -9,6 +9,7 @@ import java.lang.ArithmeticException
 import java.util.*
 
 // Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
+// mostly used for debugging purposes
 class PrintGraphTreeVisitor: NodeVisitor(){
     private var list = arrayListOf<String>()
     private var indentation = 12 //How many spaces of indentation there should be on a given line
