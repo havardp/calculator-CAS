@@ -6,6 +6,7 @@ import calculator.parser.OperandNode
 import calculator.parser.UnaryOperatorNode
 import calculator.parser.VariableNode
 import java.lang.ArithmeticException
+import java.math.RoundingMode
 import java.util.*
 
 // Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
@@ -68,6 +69,9 @@ class PrettyPrintVisitor: NodeVisitor(){
 
     override fun visit(node: BinaryOperatorNode): String {
         var str = ""
+        // todo, probably can solve this with if(minus or divide && right is binaryoperator)
+        //                                      then parenthesis around right node
+        //                                      or if precedence is less
         if(parentStack.size != 0 && (parentStack.peek().precedence > (node.token as BinaryOperatorToken).precedence
                 || (parentStack.peek().precedence == node.token.precedence
                         && (parentStack.peek() is Minus || parentStack.peek() is Divide)))){
@@ -107,7 +111,7 @@ class PrettyPrintVisitor: NodeVisitor(){
 
     override fun visit(node: OperandNode): String {
         return try {
-            node.token.value.toBigDecimal().toBigIntegerExact().toString()
+            node.token.value.toBigDecimal().setScale(2, RoundingMode.HALF_UP).toBigIntegerExact().toString()
         }catch (e: ArithmeticException){
             node.token.value
         }
