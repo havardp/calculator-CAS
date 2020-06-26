@@ -36,7 +36,7 @@ class Interpreter(tree: AbstractSyntaxTree) {
             println(printGraphTree(rewrittenTree))
             counter++
             //println(printGraphTree(rewrittenTree))
-            if(counter > 1000) {
+            if(counter > 50) {
                 println("counter greater than 1000, loop in code rewrite visitor probably")
                 break
             }
