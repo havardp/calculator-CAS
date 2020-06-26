@@ -26,6 +26,7 @@ class Interpreter(tree: AbstractSyntaxTree) {
         val rewriteVisitor = RewriteVisitor()
         var rewrittenTree = treeStack.peek().accept(rewriteVisitor)
         var counter = 0
+
         while(!rewrittenTree.equals(treeStack.peek())){
             treeStack.push(rewrittenTree)
             rewriteVisitor.resetFinished()
@@ -36,7 +37,7 @@ class Interpreter(tree: AbstractSyntaxTree) {
             println(printGraphTree(rewrittenTree))
             counter++
             //println(printGraphTree(rewrittenTree))
-            if(counter > 50) {
+            if(counter > 100) {
                 println("counter greater than 1000, loop in code rewrite visitor probably")
                 break
             }

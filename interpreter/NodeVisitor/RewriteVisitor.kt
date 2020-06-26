@@ -86,6 +86,21 @@ class RewriteVisitor: NodeVisitor() {
     private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
+        // naive check for if it is a quadratic equation, should probably do this outside and have another visitor or something which handles it, for now it will do here
+        // only actually checks if it is ordered before, also this doesn't account for unary minus before x^2 nor operand before x^2
+        if(left is BinaryOperatorNode && left.left is BinaryOperatorNode
+                && left.left.left is BinaryOperatorNode && left.left.left.token is Power && left.left.left.left is VariableNode && left.left.left.right.token.value == "2"
+                && (left.left.right is VariableNode || (left.left.right is BinaryOperatorNode && left.left.right.token is Multiplication && left.left.right.right is VariableNode))
+                && left.right is OperandNode && right is OperandNode && right.token.value == "0"){
+            println("this is quadratic equation")
+        }
+        if(left is BinaryOperatorNode
+                && left.left is BinaryOperatorNode && left.left.token is Power && left.left.left is VariableNode && left.left.right.token.value == "2"
+                && left.right is OperandNode && right is OperandNode && right.token.value == "0") {
+            println("this is also quadratic equation, without x factor")
+        }
+
+
         // variable on both sides
         if(left.containsVariable() && right.containsVariable()){
 
@@ -115,6 +130,7 @@ class RewriteVisitor: NodeVisitor() {
     // var is variable
     private fun rewritePlus(token: Token, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
+
         /**
          *   IDENTITY: remove redundant plus zero
          *       +       ->      exp
@@ -1148,7 +1164,7 @@ class RewriteVisitor: NodeVisitor() {
          *            *          ->      exp1
          *        exp1  1        ->
          */
-        else if(right.token.value == "1") return left
+        if(right.token.value == "1") return left
 
         /**
          *   IDENTITY: if left or right child is 0, expression is 0
@@ -1175,7 +1191,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Multiplication
                 && ((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
-                || (right.equals(left.left) && !right.equals(left.right))))
+                    || (right.equals(left.left) && !right.equals(left.right))))
                     return BinaryOperatorNode(Multiplication(), BinaryOperatorNode(Multiplication(), left.left, right), left.right)
 
         /**
@@ -1211,9 +1227,8 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is BinaryOperatorNode && right.token is Multiplication
                 && ((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
-                        || !(left.equals(right.left) && left.equals(right.right))))
+                        || (!left.equals(right.left)) && left.equals(right.right)))
             return BinaryOperatorNode(Multiplication(), right.left, BinaryOperatorNode(Multiplication(), right.right, left))
-
 
         /**
          *   For example 3^x * 3^(sin(x)) -> 3^(x+sin(x))
@@ -1225,72 +1240,183 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Power && right is BinaryOperatorNode && right.token is Power && left.left.equals(right.left))
                 return BinaryOperatorNode(Power(), left.left, BinaryOperatorNode(Plus(), left.right, right.right))
 
-
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
 
     private fun rewriteDivide(token: Divide, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
-        // 1 / 1 / exp -> exp
-        if(left.token.value == "1" && right is BinaryOperatorNode && right.token is Divide && right.left.token.value == "1") return right.right
-        // 0 / exp -> 0
-        if(left.token.value == "0") return OperandNode(OperandToken("0"))
-        // TODO handle division of numbers with expressions involved, for example 3x/6 -> either x/2 or 0.5x
-        // (exp1 * exp2) / exp1 -> exp2
+        /**
+         *   equivalent simplification, 1/1/exp -> exp
+         *            /          ->      exp
+         *         1     /       ->
+         *            1     exp
+         */
+        if(left.token.value == "1" && right is BinaryOperatorNode && right.token is Divide && right.left.token.value == "1")
+            return right.right
+
+        /**
+         *   0 divided by anything is zero (unless the denominator is 0, then it's undefined, don't think i want to handle that though)
+         *            /          ->      0
+         *         0    exp      ->
+         */
+        if(left.token.value == "0")
+            return OperandNode(OperandToken("0"))
+
+        /**
+         *   We cancel a factor above and below the divide. Or if there's two operands we do the calculation, so 2x/3 -> 0.6667x
+         *            /           ->      exp3
+         *         *    exp1      ->
+         *     exp2 exp3
+         */
         if(left is BinaryOperatorNode && left.token is Multiplication){
-            if(left.left.equals(right)) return left.right
-            if(left.right.equals(right)) return left.left
+            if(left.left.equals(right))
+                return left.right
+            if(left.right.equals(right))
+                return left.left
+
+            if(right.token is OperandToken && left.left.token is OperandToken && left.right !is OperandNode)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.token, right.token), left.right)
+            if(right.token is OperandToken && left.right.token is OperandToken && left.left !is OperandNode)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.right.token, right.token), left.left)
         }
-        // exp1 / (exp1 * exp2) -> 1 / exp2
+
+        /**
+         *   We cancel a factor above and below the divide. Or if there's two operands we do the calculation, so 2/3x -> 0.6667 / x
+         *            /           ->        /
+         *       exp1    *        ->     1     exp3
+         *            exp2 exp3   ->
+         */
         if(right is BinaryOperatorNode && right.token is Multiplication){
-            if(right.left.equals(left)) return BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right)
-            if(right.right.equals(left)) return BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.left)
+            if(right.left.equals(left))
+                return BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right)
+            if(right.right.equals(left))
+                return BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.left)
+
+            if(left.token is OperandToken && right.left.token is OperandToken && right.right !is OperandNode)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.token, right.left.token), right.right)
+            if(left.token is OperandToken && right.right.token is OperandToken && right.left !is OperandNode)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(),left.token, right.right.token), right.left)
         }
-        // (exp1 * exp2) / (exp1 * exp3) -> exp2 / exp3
+
+        /**
+         *   We cancel a factor above and below the divide. Or if there's two operands we do the calculation, so 2sin(x)/3x -> 0.6667 * sin(x) / x
+         *             /            ->         /
+         *        *        *        ->     exp2 exp3
+         *    exp1 exp2 exp3 exp4   ->
+         */
         if(right is BinaryOperatorNode && left is BinaryOperatorNode && left.token is Multiplication && right.token is Multiplication){
             if(left.left.equals(right.left)) return BinaryOperatorNode(Divide(), left.right, right.right)
             if(left.left.equals(right.right)) return BinaryOperatorNode(Divide(), left.right, right.left)
             if(left.right.equals(right.left)) return BinaryOperatorNode(Divide(), left.left, right.right)
             if(left.right.equals(right.right)) return BinaryOperatorNode(Divide(), left.left, right.left)
+
+            if(left.left.token is OperandToken && left.right !is OperandNode && right.left.token is OperandToken && right.right !is OperandNode)
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.token, right.left.token), left.right), right.right)
+            if(left.left.token is OperandToken && left.right !is OperandNode && right.left !is OperandNode && right.right.token is OperandToken)
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.token, right.right.token), left.right), right.left)
+            if(left.left !is OperandNode && left.right.token is OperandToken && right.left.token is OperandToken && right.right !is OperandNode)
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.right.token, right.left.token), left.left), right.right)
+            if(left.left !is OperandNode && left.right.token is OperandToken && right.left !is OperandNode && right.right.token is OperandToken)
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.right.token, right.right.token), left.left), right.left)
         }
-        // ((exp1 * exp2) * exp3) / exp2 -> exp1 * exp3
+
+        /**
+         *   We cancel a factor above and below the divide. Or if there's two operands we do the calculation
+         *             /             ->         *
+         *         *      exp1       ->     exp2  exp3
+         *       *  exp2             ->
+         *   exp3 exp4
+         */
         if(left is BinaryOperatorNode && left.token is Multiplication && left.left is BinaryOperatorNode && left.left.token is Multiplication){
-            if(left.left.left.equals(right)) return BinaryOperatorNode(Multiplication(), left.left.right, left.right)
-            if(left.left.right.equals(right)) return BinaryOperatorNode(Multiplication(), left.left.left, left.right)
+            if(left.left.left.equals(right))
+                return BinaryOperatorNode(Multiplication(), left.left.right, left.right)
+            if(left.left.right.equals(right))
+                return BinaryOperatorNode(Multiplication(), left.left.left, left.right)
+
+            if(left.left.left.token is OperandToken && left.left.right !is OperandNode && left.right !is OperandNode && right.token is OperandToken)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.left.token, right.token), BinaryOperatorNode(Multiplication(), left.left.right, left.right))
+            if(left.left.left !is OperandNode && left.left.right.token is OperandToken && left.right !is OperandNode && right.token is OperandToken)
+                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.right.token, right.token), BinaryOperatorNode(Multiplication(), left.left.left, left.right))
         }
-        // ((exp1 * exp2) * exp3) / (exp2 * exp4) -> (exp1 * exp3) / exp4
+
+        /**
+         *   We cancel a factor above and below the divide. Or if there's two operands we do the calculation
+         *              /              ->            /
+         *         *         *         ->        *       exp2
+         *       *  exp1 exp2 exp3     ->    exp1 exp4
+         *   exp4 exp5
+         */
         if(left is BinaryOperatorNode && left.token is Multiplication
                 && left.left is BinaryOperatorNode && left.left.token is Multiplication
                 && right is BinaryOperatorNode && right.token is Multiplication){
-            if(left.left.left.equals(right.right)) return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.left)
-            if(left.left.left.equals(right.left)) return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.right)
-            if(left.left.right.equals(right.right)) return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.left)
-            if(left.left.right.equals(right.left)) return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.right)
+            if(left.left.left.equals(right.right))
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.left)
+            if(left.left.left.equals(right.left))
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.right)
+            if(left.left.right.equals(right.right))
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.left)
+            if(left.left.right.equals(right.left))
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.right)
 
+            if(left.left.left.token is OperandToken && left.left.right !is OperandNode && left.right !is OperandNode && right.left.token is OperandToken && right.right !is OperandNode)
+                return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.left.token, right.left.token), BinaryOperatorNode(Multiplication(), left.left.right, left.right)), right.right)
         }
+
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
 
     private fun rewritePower(token: Power, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
-        // Don't know if there is any rewriting rules to be put here really
+
+        /**
+         *   anything to the power of 0 is 1
+         *          ^      ->      1
+         *       exp  0    ->
+         */
+        if(right.token.value == "0") return OperandNode(OperandToken("1"))
+
+        /**
+         *   anything to the power of 1 is itself
+         *          ^      ->      exp
+         *       exp  1    ->
+         */
+        if(right.token.value == "1") return left
+
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
 
     private fun rewriteUnary(token: Token, middle: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
-        // +exp -> exp
+
+        /**
+         *   Remove redundant unary plus
+         *          (+)      ->      exp
+         *          exp      ->
+         */
         if(token is UnaryPlus) return middle
-        // --exp -> exp
+
+        /**
+         *   DOUBLE NEGATION: minus minus is plus
+         *          (-)      ->      exp
+         *          (-)      ->
+         *          exp      ->
+         */
         if(token is UnaryMinus && middle is UnaryOperatorNode && middle.token is UnaryMinus) return middle.middle
-        if(token is UnaryMinus && middle is BinaryOperatorNode){
-            if(middle.token is Multiplication) return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), middle.left), middle.right)
-            // if(middle.token is Plus) return BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), middle.left), UnaryOperatorNode(UnaryMinus(), middle.right))
-        }
-        // Inverses
+
+        /**
+         *   DOUBLE NEGATION: minus minus is plus
+         *          (-)      ->      *
+         *           *       ->   -op exp
+         *         op exp    ->
+         */
+        if(token is UnaryMinus && middle is BinaryOperatorNode && middle.token is Multiplication && middle.left.token is OperandToken)
+                return BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), middle.left.token), middle.right)
+
+
+        /** INVERSES: for example sin(arcsin(x)) -> x */
         if(middle is UnaryOperatorNode
                 && ((token is Sin && middle.token is ArcSin)
                     || (token is ArcSin && middle.token is Sin)
@@ -1299,6 +1425,13 @@ class RewriteVisitor: NodeVisitor() {
                     || (token is Tan && middle.token is ArcTan)
                     || (token is ArcTan && middle.token is Tan)))
             return middle.middle
+
+        /**
+         *   sqrt(exp^2) -> |exp|
+         *           sqrt     ->      abs
+         *            ^       ->      exp
+         *         exp  2     ->
+         */
         if(token is Sqrt && middle is BinaryOperatorNode && middle.token is Power && middle.right.token.value == "2")
             return UnaryOperatorNode(Abs(), middle.left)
 
@@ -1309,6 +1442,8 @@ class RewriteVisitor: NodeVisitor() {
     private fun evaluateUnary(operator: Token, middle: OperandToken): AbstractSyntaxTree {
         // todo, probably just turn it to double instead, since it requires it being double, no point in having it big decimal
         val operand = middle.value.toBigDecimal()
+
+        /** Evaluates the unary operator */
         val result = when(operator){
             is UnaryMinus -> operand.negate()
             is UnaryPlus -> operand
@@ -1327,6 +1462,7 @@ class RewriteVisitor: NodeVisitor() {
             is Round -> round(operand.toDouble()).toBigDecimal()
             else -> throw NotAnOperatorException("Tried to visit and operate on unary operator, but token was not unary operator")
         }
+
         finished = true
         return OperandNode(OperandToken(result.toString()))
     }
@@ -1334,6 +1470,8 @@ class RewriteVisitor: NodeVisitor() {
     private fun evaluateBinary(operator: Token, left: OperandToken, right: OperandToken): AbstractSyntaxTree {
         val operand1 = left.value.toBigDecimal()
         val operand2 = right.value.toBigDecimal()
+
+        /** evalutes the binary operator */
         val result = when(operator){
             is Plus -> operand1.plus(operand2)
             is Minus -> operand1.minus(operand2)
@@ -1349,6 +1487,7 @@ class RewriteVisitor: NodeVisitor() {
             is Modulus -> operand1.remainder(operand2, CONTEXT)
             else -> throw NotAnOperatorException("Tried to visit and binary operate on node, but node was not binary operator")
         }
+        
         finished = true
         return OperandNode(OperandToken(result.toString()))
     }
