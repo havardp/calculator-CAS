@@ -2,6 +2,8 @@ package calculator.interpreter
 
 import calculator.parser.*
 import calculator.interpreter.NodeVisitor.*
+import calculator.lexer.Token.Multiplication
+import calculator.lexer.Token.Power
 import java.util.*
 
 class Interpreter(tree: AbstractSyntaxTree) {
@@ -23,8 +25,30 @@ class Interpreter(tree: AbstractSyntaxTree) {
     }
 
     // TODO: fun interpret, if quadratic, solve it, else, rewrite the tree.
+    fun interpret() {
+        /** if quadratic equation */
+        /*// naive check for if it is a quadratic equation, should probably do this outside and have another visitor or something which handles it, for now it will do here
+        // only actually checks if it is ordered, also this doesn't account for unary minus before x^2 nor operand before x^2
 
-    fun rewrite() {
+        if(left is BinaryOperatorNode && left.left is BinaryOperatorNode
+                && left.left.left is BinaryOperatorNode && left.left.left.token is Power && left.left.left.left is VariableNode && left.left.left.right.token.value == "2"
+                && (left.left.right is VariableNode || (left.left.right is BinaryOperatorNode && left.left.right.token is Multiplication && left.left.right.right is VariableNode))
+                && left.right is OperandNode && right is OperandNode && right.token.value == "0"){
+            println("this is quadratic equation")
+            return BinaryOperatorNode(token, left, right)
+        }
+        if(left is BinaryOperatorNode
+                && left.left is BinaryOperatorNode && left.left.token is Power && left.left.left is VariableNode && left.left.right.token.value == "2"
+                && left.right is OperandNode && right is OperandNode && right.token.value == "0") {
+            println("this is also quadratic equation, without x factor")
+            return BinaryOperatorNode(token, left, right)
+        }*/
+
+        // else
+        rewrite()
+    }
+
+    private fun rewrite() {
         val rewriteVisitor = RewriteVisitor()
         println(printGraphTree(treeStack.peek()))
         println(prettyPrint((treeStack.peek()))

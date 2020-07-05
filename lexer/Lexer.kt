@@ -74,6 +74,15 @@ class Lexer(private var str: String) {
                 // x2   -> x*2
                 if(previous is RightParenthesisToken || previous is VariableToken) return Multiplication()
 
+                if(ss == "e") {
+                    advance(i)
+                    return OperandToken("2.7182818284")
+                }
+                if(ss == "pi") {
+                    advance(i)
+                    return OperandToken("3.1415926535")
+                }
+
                 // If next element is part of the operand, continue
                 if (nextElement && OperandToken.assert(str[index].toString())) continue
                 if (nextElement && str[index] == '.') continue

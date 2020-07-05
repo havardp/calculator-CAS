@@ -8,7 +8,7 @@ import java.util.Stack
 /**
  * A parser which creates a abstract syntax tree from the tokens of a lexer
  *
- * Uses the shunting yard algorithm (https://en.wikipedia.org/wiki/Shunting-yard_algorithm)
+ * Uses the shunting yard algorithm https://en.wikipedia.org/wiki/Shunting-yard_algorithm
  *
  * @property lexer where we retrieve our tokens from, lexer.getNextToken to get the next token
  * @property currentToken The token which we are currently parsing
@@ -88,24 +88,27 @@ class Parser(private val lexer: Lexer){
      *  Main part of the shunting yard algorithm
      */
     private fun parseToken(){
-        if(currentToken is OperandToken) nodeStack.push(OperandNode(currentToken))
+        if(currentToken is OperandToken)
+            nodeStack.push(OperandNode(currentToken))
 
-        else if(currentToken is VariableToken) nodeStack.push(VariableNode(currentToken))
+        else if(currentToken is VariableToken)
+            nodeStack.push(VariableNode(currentToken))
 
-        else if(currentToken is UnaryOperatorToken || currentToken is LeftParenthesisToken) operatorStack.push(currentToken)
+        else if(currentToken is UnaryOperatorToken || currentToken is LeftParenthesisToken)
+            operatorStack.push(currentToken)
 
         else if(currentToken is RightParenthesisToken){
-            while(operatorStack.peek() !is LeftParenthesisToken) {
+            while(operatorStack.peek() !is LeftParenthesisToken)
                 createOperatorNode()
-            }
+
             if(operatorStack.isEmpty()) throw InvalidSyntaxException("Mismatch of parenthesis, couldn't parse")
             operatorStack.pop()
         }
 
         else if(currentToken is BinaryOperatorToken){
-            while(operatorStack.isNotEmpty() && operatorStackHasPrecedence()){
+            while(operatorStack.isNotEmpty() && operatorStackHasPrecedence())
                 createOperatorNode()
-            }
+
             operatorStack.push(currentToken)
         }
 
