@@ -29,10 +29,10 @@ abstract class BinaryOperatorToken: OperatorToken() {
     }
 }
 
-data class Plus(override val value: String = "+", override val precedence: Int = 0, override val verbose: String = "SUM"): BinaryOperatorToken()
-data class Minus(override val value: String = "-", override val precedence: Int = 0, override val verbose: String = "MINUS"): BinaryOperatorToken()
-data class Multiplication(override val value: String = "*", override val precedence: Int = 1, override val verbose: String = "MULTIPLY"): BinaryOperatorToken()
-data class Divide(override val value: String = "/", override val precedence: Int = 1, override val verbose: String = "DIVIDE"): BinaryOperatorToken()
-data class Power(override val value: String = "^", override val precedence: Int = 2, override val verbose: String = "POWER"): BinaryOperatorToken()
-data class Modulus(override val value: String = "%", override val precedence: Int = 0, override val verbose: String = "MODULUS"): BinaryOperatorToken()
-data class Equal(override val value: String = "=", override val precedence: Int = -1, override val verbose: String = "EQUAL"): BinaryOperatorToken()
+data class Plus(override val value: String = "+", override val precedence: Int = 0, override val verbose: String = "+"): BinaryOperatorToken()
+data class Minus(override val value: String = "-", override val precedence: Int = 0, override val verbose: String = "-"): BinaryOperatorToken()
+data class Multiplication(override val value: String = "*", override val precedence: Int = 1, override val verbose: String = ""): BinaryOperatorToken()
+data class Divide(override val value: String = "/", override val precedence: Int = 1, override val verbose: String = "/"): BinaryOperatorToken()
+data class Power(override val value: String = "^", override val precedence: Int = 2, override val verbose: String = "^"): BinaryOperatorToken()
+data class Modulus(override val value: String = "%", override val precedence: Int = 0, override val verbose: String = "%"): BinaryOperatorToken()
+data class Equal(override val value: String = "=", override val precedence: Int = -1, override val verbose: String = "="): BinaryOperatorToken()

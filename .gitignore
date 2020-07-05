@@ -1,7 +1,5 @@
 .idea
 out
-*.iml
-lib
 
-# don't include main.kt which i use for testing purposes
+# don't include main.kt which i use for running the program
 main.kt

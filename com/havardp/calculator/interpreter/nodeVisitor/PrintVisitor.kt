@@ -10,7 +10,7 @@ import java.util.*
 // mostly used for debugging purposes
 class PrintGraphTreeVisitor: NodeVisitor(){
     private var list = arrayListOf<String>()
-    private var indentation = 12 //How many spaces of indentation there should be on a given line
+    private var indentation = 20 //How many spaces of indentation there should be on a given line
     private var level = 0        //Which "level" in the graph we are at
 
     fun getGraph(): String {
@@ -59,62 +59,28 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 }
 
-// isright handles when to use parenthesis, we only do parenthesis when we are on right side of a left precedence operator??
+// TODO: add latex pretty print visitor, mostly \frac{left}{right}
 class PrettyPrintVisitor: NodeVisitor(){
-    private val parentStack: Stack<OperatorToken> = Stack<OperatorToken>()
-    private var isRight = false
-
     override fun visit(node: BinaryOperatorNode): String {
-        var str = ""
-        // todo, probably can solve this with if(minus or divide && right is binaryoperator)
-        //                                      then parenthesis around right node
-        //                                      or if precedence is less
-        if(parentStack.size != 0 && (parentStack.peek().precedence > (node.token as BinaryOperatorToken).precedence
-                || (parentStack.peek().precedence == node.token.precedence
-                        && (parentStack.peek() is Minus || parentStack.peek() is Divide)))){
-            val previous = parentStack.peek()
-            parentStack.push(node.token)
-            if(isRight || previous.precedence > node.token.precedence){
-                isRight = false
-                val left = "(${node.left.accept(this)}"
-                isRight = true
-                val right = "${node.token.value}${node.right.accept(this)})"
-                isRight = false
-                str = left + right
-            }else {
-                isRight = false
-                val left = node.left.accept(this)
-                isRight = true
-                val right = "${node.token.value}${node.right.accept(this)}"
-                isRight = false
-                str = left + right
-            }
-        }else{
-            isRight = false
-            parentStack.push(node.token as OperatorToken)
-            val left = node.left.accept(this)
-            isRight = true
-            val right = "${node.token.value}${node.right.accept(this)}"
-            isRight = false
-            str = left + right
-        }
-        parentStack.pop()
-        return str
+        if(node.token is BinaryOperatorToken && node.right.token is BinaryOperatorToken
+                && (((node.token is Minus || node.token is Divide) && node.token.precedence == node.right.token.precedence)
+                        || node.token.precedence > node.right.token.precedence))
+            return "${node.left.accept(this)}${node.token.verbose}(${node.right.accept(this)})"
+
+        return "${node.left.accept(this)}${(node.token as BinaryOperatorToken).verbose}${node.right.accept(this)}"
     }
     override fun visit(node: UnaryOperatorNode): String {
-        if(node.token is UnaryPlus || node.token is UnaryMinus) return "${(node.token as UnaryOperatorToken).verbose}${node.middle.accept(this)}"
+        if(node.token is UnaryPlus || node.token is UnaryMinus) return "(${(node.token as UnaryOperatorToken).verbose}${node.middle.accept(this)})"
         return "${(node.token as UnaryOperatorToken).verbose}(${node.middle.accept(this)})"
     }
 
     override fun visit(node: OperandNode): String {
         return try {
-            node.token.value.toBigDecimal().setScale(2, RoundingMode.HALF_UP).toBigIntegerExact().toString()
+            node.token.value.toBigDecimal().setScale(4, RoundingMode.HALF_UP).toBigIntegerExact().toString()
         }catch (e: ArithmeticException){
             node.token.value
         }
     }
 
-    override fun visit(node: VariableNode): String {
-        return node.token.value
-    }
+    override fun visit(node: VariableNode): String = node.token.value
 }
