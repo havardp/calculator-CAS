@@ -1,0 +1,7 @@
+.idea
+out
+*.iml
+lib
+
+# don't include main.kt which i use for testing purposes
+main.kt

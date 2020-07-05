@@ -1,9 +1,8 @@
-package calculator.interpreter.NodeVisitor
+package com.havardp.calculator.interpreter.nodeVisitor
 
-import calculator.exception.InvalidSyntaxException
-import calculator.exception.NotAnOperatorException
-import calculator.lexer.Token.*
-import calculator.parser.*
+import com.havardp.exception.*
+import com.havardp.calculator.lexer.token.*
+import com.havardp.calculator.parser.*
 import java.math.MathContext
 import java.math.RoundingMode
 import kotlin.math.*
@@ -17,7 +16,7 @@ import kotlin.math.*
  */
 class RewriteVisitor: NodeVisitor() {
     var finished = false
-    private val PRECISION = 4
+    private val PRECISION = 10
     private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
 
     /** Visitor function for binary operators */
@@ -1756,7 +1755,7 @@ class RewriteVisitor: NodeVisitor() {
         }
 
         /** Returns a syntax error if the result is undefined/NaN */
-        // TODO, have a arithmetic exception instead
+        // TODO, have a arithmetic com.havardp.calculator.exception instead
         if(result.isNaN()) throw InvalidSyntaxException("Couldn't solve ${operator.value}(${middle.value}), the result is NaN")
 
         finished = true

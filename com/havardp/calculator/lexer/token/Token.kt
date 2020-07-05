@@ -1,4 +1,4 @@
-package calculator.lexer.Token
+package com.havardp.calculator.lexer.token
 
 // TODO: add constant token class
 // TODO: Add missing data classes

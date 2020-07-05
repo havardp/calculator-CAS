@@ -1,4 +1,4 @@
-package calculator.lexer.Token
+package com.havardp.calculator.lexer.token
 
 data class VariableToken(override val value: String): Token() {
     companion object {

@@ -1,9 +1,7 @@
-package calculator.interpreter
+package com.havardp.calculator.interpreter
 
-import calculator.parser.*
-import calculator.interpreter.NodeVisitor.*
-import calculator.lexer.Token.Multiplication
-import calculator.lexer.Token.Power
+import com.havardp.calculator.parser.*
+import com.havardp.calculator.interpreter.nodeVisitor.*
 import java.util.*
 
 class Interpreter(tree: AbstractSyntaxTree) {

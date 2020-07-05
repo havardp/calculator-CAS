@@ -1,8 +1,8 @@
-package calculator.parser
+package com.havardp.calculator.parser
 
-import calculator.exception.InvalidSyntaxException
-import calculator.lexer.*
-import calculator.lexer.Token.*
+import com.havardp.exception.InvalidSyntaxException
+import com.havardp.calculator.lexer.*
+import com.havardp.calculator.lexer.token.*
 import java.util.Stack
 
 /**

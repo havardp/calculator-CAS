@@ -1,4 +1,4 @@
-package calculator.lexer.Token
+package com.havardp.calculator.lexer.token
 
 abstract class ParenthesisToken: OperatorToken(){
     abstract override val value: String

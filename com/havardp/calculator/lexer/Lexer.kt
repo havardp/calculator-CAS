@@ -1,7 +1,7 @@
-package calculator.lexer
+package com.havardp.calculator.lexer
 
-import calculator.exception.InvalidSyntaxException
-import calculator.lexer.Token.*
+import com.havardp.exception.InvalidSyntaxException
+import com.havardp.calculator.lexer.token.*
 
 /**
  * A lexer which should be used by the parser to get tokens from a string

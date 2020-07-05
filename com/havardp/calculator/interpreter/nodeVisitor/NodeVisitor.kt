@@ -1,6 +1,6 @@
-package calculator.interpreter.NodeVisitor
+package com.havardp.calculator.interpreter.nodeVisitor
 
-import calculator.parser.*
+import com.havardp.calculator.parser.*
 
 // https://en.wikipedia.org/wiki/Visitor_pattern implementation
 // https://en.wikipedia.org/wiki/Double_dispatch#Visitor_pattern

@@ -1,10 +1,7 @@
-package calculator.interpreter.NodeVisitor
+package com.havardp.calculator.interpreter.nodeVisitor
 
-import calculator.lexer.Token.*
-import calculator.parser.BinaryOperatorNode
-import calculator.parser.OperandNode
-import calculator.parser.UnaryOperatorNode
-import calculator.parser.VariableNode
+import com.havardp.calculator.lexer.token.*
+import com.havardp.calculator.parser.*
 import java.lang.ArithmeticException
 import java.math.RoundingMode
 import java.util.*
