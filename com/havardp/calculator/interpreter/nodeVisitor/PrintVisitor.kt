@@ -60,23 +60,26 @@ class PrintGraphTreeVisitor: NodeVisitor(){
 }
 
 // TODO: add latex pretty print visitor, mostly \frac{left}{right}
+// it should have space between every token, to avoid stuff like \cdotsin(x) for example, instead \cdot sin(x)
+// and use \cdot instead of multiplication
 class PrettyPrintVisitor: NodeVisitor(){
     override fun visit(node: BinaryOperatorNode): String {
         if(node.token is BinaryOperatorToken && node.right.token is BinaryOperatorToken
                 && (((node.token is Minus || node.token is Divide) && node.token.precedence == node.right.token.precedence)
                         || node.token.precedence > node.right.token.precedence))
-            return "${node.left.accept(this)}${node.token.verbose}(${node.right.accept(this)})"
+            return "${node.left.accept(this)}${node.token.value}(${node.right.accept(this)})"
 
-        return "${node.left.accept(this)}${(node.token as BinaryOperatorToken).verbose}${node.right.accept(this)}"
+        return "${node.left.accept(this)}${(node.token as BinaryOperatorToken).value}${node.right.accept(this)}"
     }
+
     override fun visit(node: UnaryOperatorNode): String {
-        if(node.token is UnaryPlus || node.token is UnaryMinus) return "(${(node.token as UnaryOperatorToken).verbose}${node.middle.accept(this)})"
-        return "${(node.token as UnaryOperatorToken).verbose}(${node.middle.accept(this)})"
+        if(node.token is UnaryPlus || node.token is UnaryMinus) return "(${(node.token as UnaryOperatorToken).value}${node.middle.accept(this)})"
+        return "${(node.token as UnaryOperatorToken).value}(${node.middle.accept(this)})"
     }
 
     override fun visit(node: OperandNode): String {
         return try {
-            node.token.value.toBigDecimal().setScale(4, RoundingMode.HALF_UP).toBigIntegerExact().toString()
+            node.token.value.toBigDecimal().setScale(5, RoundingMode.HALF_UP).toBigIntegerExact().toString()
         }catch (e: ArithmeticException){
             node.token.value
         }

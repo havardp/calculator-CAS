@@ -4,10 +4,12 @@ import com.havardp.calculator.parser.*
 import com.havardp.calculator.interpreter.nodeVisitor.*
 import java.util.*
 
-class Interpreter(tree: AbstractSyntaxTree) {
-    private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
+class Interpreter(parser: Parser) {
+    val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
+    private val rewriteVisitor = RewriteVisitor()
 
     init {
+        val tree = parser.parse()
         treeStack.push(tree)
     }
 
@@ -17,9 +19,13 @@ class Interpreter(tree: AbstractSyntaxTree) {
         return printGraphVisitor.getGraph()
     }
 
-    private fun prettyPrint(ast: AbstractSyntaxTree): String{
+    fun prettyPrint(ast: AbstractSyntaxTree): String{
         val prettyPrintVisitor = PrettyPrintVisitor() // prints the expression in infix form.
         return ast.accept(prettyPrintVisitor)
+    }
+
+    fun getPrettyPrintedResult(): String{
+        return prettyPrint(treeStack.peek())
     }
 
     // TODO: fun interpret, if quadratic, solve it, else, rewrite the tree.
@@ -47,37 +53,20 @@ class Interpreter(tree: AbstractSyntaxTree) {
     }
 
     private fun rewrite() {
-        val rewriteVisitor = RewriteVisitor()
-        println(printGraphTree(treeStack.peek()))
-        println(prettyPrint((treeStack.peek()))
-
-        )
         var rewrittenTree = treeStack.peek().accept(rewriteVisitor)
         var counter = 0
 
         while(!rewrittenTree.equals(treeStack.peek())){
             treeStack.push(rewrittenTree)
             rewriteVisitor.finished = false
-
-            // prints the tree and pretty print
-            //println(printGraphTree(rewrittenTree))
-            println(prettyPrint((rewrittenTree)))
-
             rewrittenTree = treeStack.peek().accept(rewriteVisitor)
 
             // just so the program stops whenever we have an infinite loop in rewrite visitor
-            // There shouldn't be one but just in case
             counter++
-            //println(printGraphTree(rewrittenTree))
             if(counter > 80) {
-                println("counter greater than 1000, loop in code rewrite visitor probably")
+                println("counter greater than 80, loop in code rewrite visitor probably")
                 break
             }
-        }
-        // TODO with explanation, for( until treeStack.size -1) get pretty print and explanation, continue if pretty print is identical ASSOCIATIVITY
-        for(t in treeStack) {
-            //println(prettyPrint(t))
-            // loop through it like this to
         }
     }
 }
