@@ -15,9 +15,9 @@ class PrettyPrintLatexVisitor: NodeVisitor(){
         if(node.token is BinaryOperatorToken && node.right.token is BinaryOperatorToken
                 && ((node.token is Minus && node.token.precedence == node.right.token.precedence)
                         || node.token.precedence > node.right.token.precedence))
-                return "${node.left.accept(this)}${node.token.value}(${node.right.accept(this)})"
+            return "${node.left.accept(this)} ${node.token.verbose} (${node.right.accept(this)})"
 
-        return "${node.left.accept(this)}${(node.token as BinaryOperatorToken).value}${node.right.accept(this)}"
+        return "${node.left.accept(this)} ${(node.token as BinaryOperatorToken).verbose} ${node.right.accept(this)}"
     }
 
     override fun visit(node: UnaryOperatorNode): String {

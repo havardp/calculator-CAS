@@ -31,7 +31,7 @@ abstract class BinaryOperatorToken: OperatorToken() {
 
 data class Plus(override val value: String = "+", override val precedence: Int = 0, override val verbose: String = "+"): BinaryOperatorToken()
 data class Minus(override val value: String = "-", override val precedence: Int = 0, override val verbose: String = "-"): BinaryOperatorToken()
-data class Multiplication(override val value: String = "*", override val precedence: Int = 1, override val verbose: String = ""): BinaryOperatorToken()
+data class Multiplication(override val value: String = "*", override val precedence: Int = 1, override val verbose: String = "\\cdot"): BinaryOperatorToken()
 data class Divide(override val value: String = "/", override val precedence: Int = 1, override val verbose: String = "/"): BinaryOperatorToken()
 data class Power(override val value: String = "^", override val precedence: Int = 2, override val verbose: String = "^"): BinaryOperatorToken()
 data class Modulus(override val value: String = "%", override val precedence: Int = 0, override val verbose: String = "%"): BinaryOperatorToken()

@@ -80,14 +80,14 @@ class Test {
 
     @Test
     fun evaluateAlgebra(){
-        assertEquals("2*x", evaluate("x+x"))
-        assertEquals("2-6*x+3*sin(x)", evaluate("2+(2+x)+2x+2sin(x)+-3x*3*x/x+3x-(3x+2)+sin(x)"))
+        assertEquals("2 \\cdot x", evaluate("x+x"))
+        assertEquals("2 - 6 \\cdot x + 3 \\cdot sin(x)", evaluate("2+(2+x)+2x+2sin(x)+-3x*3*x/x+3x-(3x+2)+sin(x)"))
     }
 
     @Test
     fun evaluateAlgebraEquality(){
-        assertEquals("x=2", evaluate("2x-4=0"))
-        assertEquals("x=-3.5", evaluate("2x-3x+3+4+3x/(2x)+2x=3-x-3x+2+4x"))
-        assertEquals("x=2", evaluate("x^5-3=29"))
+        assertEquals("x = 2", evaluate("2x-4=0"))
+        assertEquals("x = -3.5", evaluate("2x-3x+3+4+3x/(2x)+2x=3-x-3x+2+4x"))
+        assertEquals("x = 2", evaluate("x^5-3=29"))
     }
 }
