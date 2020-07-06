@@ -75,6 +75,7 @@ class Test {
     @Test
     fun evaluateMixedArithmetic(){
         assertEquals("100.5", evaluate("2+3-4*2+16-2/4+88"))
+        assertEquals("\\frac{2}{x}", evaluate("(1+1)/x"))
     }
 
     @Test

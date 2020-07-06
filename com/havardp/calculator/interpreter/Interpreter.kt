@@ -14,18 +14,27 @@ class Interpreter(parser: Parser) {
     }
 
     fun printGraphTree(ast: AbstractSyntaxTree): String{
-        val printGraphVisitor = PrintGraphTreeVisitor() // prints the graph
-        ast.accept(printGraphVisitor)
-        return printGraphVisitor.getGraph()
+        val visitor = PrintGraphTreeVisitor() // prints the graph
+        ast.accept(visitor)
+        return visitor.getGraph()
+    }
+
+    fun debugPrettyPrint(ast: AbstractSyntaxTree): String{
+        val visitor = PrettyPrintVisitor() // prints the expression in infix form.
+        return ast.accept(visitor)
     }
 
     fun prettyPrint(ast: AbstractSyntaxTree): String{
-        val prettyPrintVisitor = PrettyPrintVisitor() // prints the expression in infix form.
-        return ast.accept(prettyPrintVisitor)
+        val visitor = PrettyPrintLatexVisitor() // prints the expression in infix form.
+        return ast.accept(visitor)
     }
 
     fun getPrettyPrintedResult(): String{
         return prettyPrint(treeStack.peek())
+    }
+
+    fun getExplanation(){
+        TODO("not yet implemented, need to have an explanation or step by step stack in rewrite visitor")
     }
 
     // TODO: fun interpret, if quadratic, solve it, else, rewrite the tree.

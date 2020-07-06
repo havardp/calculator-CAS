@@ -6,8 +6,14 @@ import java.lang.ArithmeticException
 import java.math.RoundingMode
 import java.util.*
 
-// Only working properly for simple graph, as soon as multi digit numbers, or deep graphs are introduced, it doesn't display properly
-// mostly used for debugging purposes
+/** Prints a (somewhat) correct output of how the graph looks like
+ *  For example the lines below
+ *
+ *  Graph of abstract syntax tree
+ *        +
+ *     3    *
+ *        2   sin(x)
+ */
 class PrintGraphTreeVisitor: NodeVisitor(){
     private var list = arrayListOf<String>()
     private var indentation = 20 //How many spaces of indentation there should be on a given line
@@ -59,9 +65,7 @@ class PrintGraphTreeVisitor: NodeVisitor(){
     }
 }
 
-// TODO: add latex pretty print visitor, mostly \frac{left}{right}
-// it should have space between every token, to avoid stuff like \cdotsin(x) for example, instead \cdot sin(x)
-// and use \cdot instead of multiplication
+/** Pretty prints the tree, an example output is "3*2+sin(x)+3/2" */
 class PrettyPrintVisitor: NodeVisitor(){
     override fun visit(node: BinaryOperatorNode): String {
         if(node.token is BinaryOperatorToken && node.right.token is BinaryOperatorToken
@@ -79,6 +83,8 @@ class PrettyPrintVisitor: NodeVisitor(){
 
     override fun visit(node: OperandNode): String {
         return try {
+            // if there is at least five 0's in the start of the decimal, we round, so like 0.000000321 -> 0
+            // or 0.999999321321 -> 1
             node.token.value.toBigDecimal().setScale(5, RoundingMode.HALF_UP).toBigIntegerExact().toString()
         }catch (e: ArithmeticException){
             node.token.value
