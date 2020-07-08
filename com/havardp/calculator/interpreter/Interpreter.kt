@@ -2,6 +2,7 @@ package com.havardp.calculator.interpreter
 
 import com.havardp.calculator.parser.*
 import com.havardp.calculator.interpreter.nodeVisitor.*
+import com.havardp.calculator.lexer.Lexer
 import com.havardp.calculator.lexer.token.*
 import java.math.BigDecimal
 import java.util.*
@@ -9,8 +10,7 @@ import java.util.*
 class Interpreter(parser: Parser) {
     val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
     private val rewriteVisitor = RewriteVisitor()
-    //TODO: input variable, set when interpret is called, solution variable, set when rewrite is done (or in quadratic as well)
-    // maybe make a data class Result, that has all info, and return it on interpreter.interpret
+    private val result = Result()
 
     init {
         val tree = parser.parse()
@@ -33,12 +33,12 @@ class Interpreter(parser: Parser) {
         return ast.accept(visitor)
     }
 
-    fun getPrettyPrintedResult(): String{
-        return prettyPrint(treeStack.peek())
-    }
-
-    fun interpret() {
+    fun interpret(): Result {
+        result.input = prettyPrint(treeStack.peek())
         rewrite()
+
+        result.result = prettyPrint(treeStack.peek())
+        return result
     }
 
     private fun rewrite() {
@@ -126,12 +126,16 @@ class Interpreter(parser: Parser) {
                 }
             }
         }
-
-        if(a != null && b != null && c != null) solveQuadraticEquation(a, b, c)
+        if(a != null && b != null && c != null) solveQuadraticEquation(a.toString(), b.toString(), c.toString())
     }
 
-    private fun solveQuadraticEquation(a: BigDecimal, b: BigDecimal, c: BigDecimal) {
-        println("a: $a, b: $b, c: $c")
+    private fun solveQuadraticEquation(a: String, b: String, c: String) {
+        result.isQuadratic = true
+        result.quadraticFormula = "\\frac{-$b \\pm \\sqrt{$b^2 - 4 \\cdot $a \\cdot $c}}{2 \\cdot $a}"
+        val root1 = Interpreter(Parser(Lexer("(-$b+sqrt($b^2-4*$a*$c))/(2*$a)"))).interpret()
+        val root2 = Interpreter(Parser(Lexer("(-$b-sqrt($b^2-4*$a*$c))/(2*$a)"))).interpret()
+        result.root1 = root1
+        result.root2 = root2
     }
 }
 

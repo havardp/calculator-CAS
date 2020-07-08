@@ -11,8 +11,8 @@ class Test {
         val lexer = Lexer(str)
         val parser = Parser(lexer)
         val interpreter = Interpreter(parser)
-        interpreter.interpret()
-        return interpreter.getPrettyPrintedResult()
+        val result = interpreter.interpret()
+        return result.result
     }
 
     @Test
