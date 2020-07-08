@@ -2,11 +2,15 @@ package com.havardp.calculator.interpreter
 
 import com.havardp.calculator.parser.*
 import com.havardp.calculator.interpreter.nodeVisitor.*
+import com.havardp.calculator.lexer.token.*
+import java.math.BigDecimal
 import java.util.*
 
 class Interpreter(parser: Parser) {
     val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
     private val rewriteVisitor = RewriteVisitor()
+    //TODO: input variable, set when interpret is called, solution variable, set when rewrite is done (or in quadratic as well)
+    // maybe make a data class Result, that has all info, and return it on interpreter.interpret
 
     init {
         val tree = parser.parse()
@@ -33,31 +37,7 @@ class Interpreter(parser: Parser) {
         return prettyPrint(treeStack.peek())
     }
 
-    fun getExplanation(){
-        TODO("not yet implemented, need to have an explanation or step by step stack in rewrite visitor")
-    }
-
-    // TODO: fun interpret, if quadratic, solve it, else, rewrite the tree.
     fun interpret() {
-        /** if quadratic equation */
-        /*// naive check for if it is a quadratic equation, should probably do this outside and have another visitor or something which handles it, for now it will do here
-        // only actually checks if it is ordered, also this doesn't account for unary minus before x^2 nor operand before x^2
-
-        if(left is BinaryOperatorNode && left.left is BinaryOperatorNode
-                && left.left.left is BinaryOperatorNode && left.left.left.token is Power && left.left.left.left is VariableNode && left.left.left.right.token.value == "2"
-                && (left.left.right is VariableNode || (left.left.right is BinaryOperatorNode && left.left.right.token is Multiplication && left.left.right.right is VariableNode))
-                && left.right is OperandNode && right is OperandNode && right.token.value == "0"){
-            println("this is quadratic equation")
-            return BinaryOperatorNode(token, left, right)
-        }
-        if(left is BinaryOperatorNode
-                && left.left is BinaryOperatorNode && left.left.token is Power && left.left.left is VariableNode && left.left.right.token.value == "2"
-                && left.right is OperandNode && right is OperandNode && right.token.value == "0") {
-            println("this is also quadratic equation, without x factor")
-            return BinaryOperatorNode(token, left, right)
-        }*/
-
-        // else
         rewrite()
     }
 
@@ -77,6 +57,81 @@ class Interpreter(parser: Parser) {
                 break
             }
         }
+
+        /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the form i expect */
+        if(rewrittenTree is BinaryOperatorNode && rewrittenTree.token is Equal){
+            val node = rewrittenTree
+
+            /** if x node is before x^2 node we move them */
+            if(node.left is BinaryOperatorNode && (node.left.left is VariableNode || (node.left.left is UnaryOperatorNode && node.left.left.middle is VariableNode))){
+                if(node.left.token is Plus)
+                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), node.right), OperandNode(OperandToken("0"))))
+                if(node.left.token is Minus)
+                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), node.right), OperandNode(OperandToken("0"))))
+            }
+
+            /** Since rewrite visitor moves operands to the right of equality, we just move it back here */
+            else
+                isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), node.left, node.right), OperandNode(OperandToken("0"))))
+        }
+    }
+
+    // Should call this after rewrite, then we have a standard form for the input, and can evaluate more expressions
+    // then we just say the input is equal to the result of the rewrite, so we dont move operands to the right and then back etc.
+    private fun isQuadraticEquation(node: AbstractSyntaxTree) {
+        var a: BigDecimal? = null
+        var b: BigDecimal? = null
+        var c: BigDecimal? = null
+
+        if(node is BinaryOperatorNode && node.token is Equal && node.right.token.value == "0"){
+            val left = node.left
+
+            if(left is BinaryOperatorNode){
+                /** Determine the value of the constant factor */
+                if(left.token is Minus && left.right is OperandNode)
+                    c = left.right.token.value.toBigDecimal().negate()
+                else return
+
+                if(left.left is BinaryOperatorNode){
+                    /** determine the value of the x factor */
+                    if(left.left.token is Plus && left.left.right is VariableNode)
+                        b = 1.toBigDecimal()
+                    else if(left.left.token is Minus && left.left.right is VariableNode)
+                        b = (-1).toBigDecimal()
+                    else if(left.left.token is Plus && left.left.right is UnaryOperatorNode && left.left.right.token is UnaryMinus && left.left.right.middle is VariableNode)
+                        b = (-1).toBigDecimal()
+                    else if(left.left.token is Minus && left.left.right is UnaryOperatorNode && left.left.right.token is UnaryMinus && left.left.right.middle is VariableNode)
+                        b = 1.toBigDecimal()
+                    else if(left.left.right is BinaryOperatorNode && left.left.right.token is Multiplication){
+                        if(left.left.token is Plus && left.left.right.right is VariableNode && left.left.right.left is OperandNode)
+                            b = left.left.right.left.token.value.toBigDecimal()
+                        else if(left.left.token is Minus && left.left.right.right is VariableNode && left.left.right.left is OperandNode)
+                            b = left.left.right.left.token.value.toBigDecimal().negate()
+                    }
+                    else return
+
+                    /** Determines the value of the x^2 factor */
+                    if(left.left.left is BinaryOperatorNode) {
+                        if(left.left.left.token is Power && left.left.left.right.token.value == "2" && left.left.left.left is VariableNode)
+                            a = 1.toBigDecimal()
+                        if(left.left.left.token is Multiplication && left.left.left.left is OperandNode
+                                && left.left.left.right is BinaryOperatorNode && left.left.left.right.token is Power
+                                && left.left.left.right.right.token.value == "2" && left.left.left.right.left is VariableNode)
+                            a = left.left.left.left.token.value.toBigDecimal()
+                    }
+                    else if(left.left.left is UnaryOperatorNode && left.left.left.token is UnaryMinus && left.left.left.middle is BinaryOperatorNode)
+                        if(left.left.left.middle.token is Power && left.left.left.middle.left is VariableNode && left.left.left.middle.right.token.value == "2")
+                            a = (-1).toBigDecimal()
+
+                }
+            }
+        }
+
+        if(a != null && b != null && c != null) solveQuadraticEquation(a, b, c)
+    }
+
+    private fun solveQuadraticEquation(a: BigDecimal, b: BigDecimal, c: BigDecimal) {
+        println("a: $a, b: $b, c: $c")
     }
 }
 

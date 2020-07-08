@@ -1543,10 +1543,9 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication){
             if(left.left.equals(right))
                 return left.right
-            if(left.right.equals(right)){
-                println("do we get here?")
+            if(left.right.equals(right))
                 return left.left
-            }
+
 
             if(right.token is OperandToken && left.left.token is OperandToken && left.right !is OperandNode)
                 return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.token, right.token), left.right)
@@ -1655,6 +1654,16 @@ class RewriteVisitor: NodeVisitor() {
                 return BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.left.token, right.left.token), BinaryOperatorNode(Multiplication(), left.left.right, left.right)), right.right)
         }
 
+        /**
+         *   For example 3^x / 3^(sin(x)) -> 3^(x-sin(x))
+         *   where exp1 = exp3
+         *             /            ->         ^
+         *        ^        ^        ->     exp1   -
+         *    exp1 exp2 exp3 exp4   ->         exp2 exp4
+         */
+        if(left is BinaryOperatorNode && left.token is Power && right is BinaryOperatorNode && right.token is Power && left.left.equals(right.left))
+            return BinaryOperatorNode(Power(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
+
         finished = false
         return BinaryOperatorNode(token, left, right)
     }
@@ -1733,7 +1742,7 @@ class RewriteVisitor: NodeVisitor() {
 
     private fun evaluateUnary(operator: Token, middle: OperandToken): AbstractSyntaxTree {
         val operand = middle.value.toDouble()
-
+        // todo, if sqrt, if negative, return mult sqrt abs times imaginary
         /** Evaluates the unary operator */
         val result = when(operator){
             is UnaryMinus -> -operand
@@ -1744,7 +1753,13 @@ class RewriteVisitor: NodeVisitor() {
             is ArcCos -> acos(operand)
             is Tan -> tan(operand)
             is ArcTan -> atan(operand)
-            is Sqrt -> sqrt(operand)
+            is Sqrt -> {
+                if(operand == (-1).toDouble())
+                    TODO("return imaginary unit")
+                if (operand < 0)
+                    return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), OperandNode(OperandToken("1")))
+                sqrt(operand)
+            }
             is Abs -> abs(operand)
             is Deg -> Math.toDegrees(operand)
             is Rad -> Math.toRadians(operand)
@@ -1765,6 +1780,7 @@ class RewriteVisitor: NodeVisitor() {
     private fun evaluateBinary(operator: Token, left: OperandToken, right: OperandToken): AbstractSyntaxTree {
         val operand1 = left.value.toBigDecimal()
         val operand2 = right.value.toBigDecimal()
+        finished = true
 
         /** evaluates the binary operator */
         val result = when(operator){
@@ -1778,12 +1794,20 @@ class RewriteVisitor: NodeVisitor() {
                     throw InvalidSyntaxException("Tried to divide by zero")
                 }
             }
-            is Power -> operand1.toDouble().pow(operand2.toDouble()).toBigDecimal()
+            is Power -> {
+                /** turn to square root instead */
+                if(right.value == "0.5")
+                    return UnaryOperatorNode(Sqrt(), OperandNode(left))
+                /** if left is negative and right is not whole number, don't know yet the best way to handle this*/
+                if (operand1 < 0.toBigDecimal() && right.value.toIntOrNull() == null)
+                    throw ArithmeticErrorException("Sorry, this calculator can't handle ${left.value}${operator.value}${right.value}")
+
+                operand1.toDouble().pow(operand2.toDouble()).toBigDecimal()
+            }
             is Modulus -> operand1.remainder(operand2, CONTEXT)
             else -> throw NotAnOperatorException("Tried to visit and binary operate on node, but node was not binary operator")
         }
 
-        finished = true
         return OperandNode(OperandToken(result.toString()))
     }
 }
