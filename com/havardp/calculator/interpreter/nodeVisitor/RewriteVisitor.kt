@@ -182,6 +182,53 @@ class RewriteVisitor: NodeVisitor() {
                     if(left.right is OperandNode && !right.containsVariable())
                         return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Power(), right, BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), left.right)))
                 }
+
+                if((left.token is Plus || left.token is Minus)
+                        && left.left is BinaryOperatorNode
+                        && (left.left.token is Plus || left.left.token is Minus)){
+                    if(left.left.token is Plus){
+                        /**
+                         *   move operand to right (deeper in the tree)
+                         *            =         ->         =
+                         *          +  exp1     ->     +          -
+                         *       +    exp2      -> exp4 exp2 exp1  exp3
+                         *  exp3 exp4
+                         */
+                        if(left.left.left is OperandNode)
+                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.right, left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+
+                        /**
+                         *   move operand to right (deeper in the tree)
+                         *            =         ->         =
+                         *          +  exp1     ->     +          -
+                         *       +    exp2      -> exp3 exp2 exp1  exp4
+                         *  exp3 exp4
+                         */
+                        if(left.left.right is OperandNode)
+                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Minus(), right, left.left.right))
+                    }
+
+                    if(left.left.token is Minus){
+                        /**
+                         *   move operand to right (deeper in the tree)
+                         *            =         ->          =
+                         *          +  exp1     ->     +          -
+                         *       -    exp2      ->  (-) exp2 exp1  exp3
+                         *  exp3 exp4              exp4
+                         */
+                        if(left.left.left is OperandNode)
+                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, UnaryOperatorNode(UnaryMinus(), left.left.right), left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+                        /**
+                         *   move operand to right (deeper in the tree)
+                         *            =         ->           =
+                         *          +  exp1     ->      +          +
+                         *       -    exp2      ->  exp3 exp2  exp1  exp4
+                         *  exp3 exp4
+                         */
+                        if(left.left.right is OperandNode)
+                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Plus(), right, left.left.right))
+                    }
+                }
             }
             if(left is UnaryOperatorNode && !right.containsVariable()){
                 return when(left.token){

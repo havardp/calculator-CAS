@@ -8,7 +8,7 @@ import java.math.BigDecimal
 import java.util.*
 
 class Interpreter(parser: Parser) {
-    val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
+    private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
     private val rewriteVisitor = RewriteVisitor()
     private val result = Result()
 
@@ -17,18 +17,20 @@ class Interpreter(parser: Parser) {
         treeStack.push(tree)
     }
 
+    /** Used for debugging, prints the graph */
     fun printGraphTree(ast: AbstractSyntaxTree): String{
-        val visitor = PrintGraphTreeVisitor() // prints the graph
+        val visitor = PrintGraphTreeVisitor()
         ast.accept(visitor)
         return visitor.getGraph()
     }
 
+    /** Used for debugging, pretty prints the equation, about the same as a user would've inputted */
     fun debugPrettyPrint(ast: AbstractSyntaxTree): String{
-        val visitor = PrettyPrintVisitor() // prints the expression in infix form.
+        val visitor = PrettyPrintVisitor()
         return ast.accept(visitor)
     }
 
-    fun prettyPrint(ast: AbstractSyntaxTree): String{
+    private fun prettyPrint(ast: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor() // prints the expression in infix form.
         return ast.accept(visitor)
     }
@@ -48,36 +50,52 @@ class Interpreter(parser: Parser) {
         while(!rewrittenTree.equals(treeStack.peek())){
             treeStack.push(rewrittenTree)
             rewriteVisitor.finished = false
+
+            /** add the change to the solution */
+            result.solveSteps.add(prettyPrint(rewrittenTree))
+
+            /** Do another rewrite */
             rewrittenTree = treeStack.peek().accept(rewriteVisitor)
 
-            // just so the program stops whenever we have an infinite loop in rewrite visitor
+            /** code below prevents crash if there's somehow a non terminating loop in the rewrite visitor */
             counter++
-            if(counter > 80) {
+            if(counter > 200) {
                 println("counter greater than 80, loop in code rewrite visitor probably")
                 break
             }
         }
 
-        /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the form i expect */
+        /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the expected form */
         if(rewrittenTree is BinaryOperatorNode && rewrittenTree.token is Equal){
             val node = rewrittenTree
 
             /** if x node is before x^2 node we move them */
             if(node.left is BinaryOperatorNode && (node.left.left is VariableNode || (node.left.left is UnaryOperatorNode && node.left.left.middle is VariableNode))){
-                if(node.left.token is Plus)
-                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), node.right), OperandNode(OperandToken("0"))))
-                if(node.left.token is Minus)
-                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), node.right), OperandNode(OperandToken("0"))))
+                if(node.left.token is Plus){
+                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
+                    else
+                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), node.right), OperandNode(OperandToken("0"))))
+                }
+                if(node.left.token is Minus){
+                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
+                    else
+                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), node.right), OperandNode(OperandToken("0"))))
+                }
             }
 
             /** Since rewrite visitor moves operands to the right of equality, we just move it back here */
-            else
-                isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), node.left, node.right), OperandNode(OperandToken("0"))))
+            else{
+                if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), node.left, OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
+                else
+                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), node.left, node.right), OperandNode(OperandToken("0"))))
+            }
         }
     }
 
-    // Should call this after rewrite, then we have a standard form for the input, and can evaluate more expressions
-    // then we just say the input is equal to the result of the rewrite, so we dont move operands to the right and then back etc.
+    /** Analyses the tree, if it is a quadratic equation, then we call evaluate quadratic with the corresponding a b c values */
     private fun isQuadraticEquation(node: AbstractSyntaxTree) {
         var a: BigDecimal? = null
         var b: BigDecimal? = null
@@ -90,6 +108,8 @@ class Interpreter(parser: Parser) {
                 /** Determine the value of the constant factor */
                 if(left.token is Minus && left.right is OperandNode)
                     c = left.right.token.value.toBigDecimal().negate()
+                else if(left.token is Plus && left.right is OperandNode)
+                    c = left.right.token.value.toBigDecimal()
                 else return
 
                 if(left.left is BinaryOperatorNode){
