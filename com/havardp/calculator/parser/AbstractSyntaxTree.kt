@@ -75,7 +75,7 @@ class ImaginaryNode(token: Token): AbstractSyntaxTree(token){
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is ImaginaryNode
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is ImaginaryNode && token.value == otherTree.token.value
 
     override fun containsVariable(): Boolean = false
 }

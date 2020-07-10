@@ -32,6 +32,7 @@ class RewriteVisitor: NodeVisitor() {
         /** Visit left and right child nodes */
         val left = node.left.accept(this)
         val right = node.right.accept(this)
+
         /** If left or right child node did a change, then we return them*/
         if(finished) return BinaryOperatorNode(node.token, left, right)
 
@@ -1792,7 +1793,8 @@ class RewriteVisitor: NodeVisitor() {
 
     private fun evaluateUnary(operator: Token, middle: OperandToken): AbstractSyntaxTree {
         val operand = middle.value.toDouble()
-        // todo, if sqrt, if negative, return mult sqrt abs times imaginary
+        finished = true
+
         /** Evaluates the unary operator */
         val result = when(operator){
             is UnaryMinus -> -operand
@@ -1807,7 +1809,8 @@ class RewriteVisitor: NodeVisitor() {
                 if(operand == (-1).toDouble())
                     return ImaginaryNode(ImaginaryToken("i"))
                 if (operand < 0)
-                    return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), ImaginaryNode(ImaginaryToken("i")))
+                    return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), UnaryOperatorNode(Sqrt(), OperandNode(OperandToken("-1"))))
+
                 sqrt(operand)
             }
             is Abs -> abs(operand)
@@ -1823,7 +1826,6 @@ class RewriteVisitor: NodeVisitor() {
         // TODO, have a arithmetic com.havardp.calculator.exception instead
         if(result.isNaN()) throw InvalidSyntaxException("Couldn't solve ${operator.value}(${middle.value}), the result is NaN")
 
-        finished = true
         return OperandNode(OperandToken(result.toString()))
     }
 
