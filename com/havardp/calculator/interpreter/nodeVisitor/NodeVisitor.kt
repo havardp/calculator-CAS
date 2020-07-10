@@ -12,6 +12,7 @@ abstract class NodeVisitor {
     abstract fun visit(node: UnaryOperatorNode): Any
     abstract fun visit(node: OperandNode): Any
     abstract fun visit(node: VariableNode): Any
+    abstract fun visit(node: ImaginaryNode): Any
 }
 
 

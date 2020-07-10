@@ -63,6 +63,11 @@ class PrintGraphTreeVisitor: NodeVisitor(){
         createNewLevel(node.token.value.length)
         list[level] += node.token.value + "   "
     }
+
+    override fun visit(node: ImaginaryNode) {
+        createNewLevel(node.token.value.length)
+        list[level] += node.token.value + "   "
+    }
 }
 
 /** Pretty prints the tree, an example output is "3*2+sin(x)+3/2" */
@@ -92,4 +97,5 @@ class PrettyPrintVisitor: NodeVisitor(){
     }
 
     override fun visit(node: VariableNode): String = node.token.value
+    override fun visit(node: ImaginaryNode): String = node.token.value
 }

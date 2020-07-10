@@ -2,6 +2,7 @@ package com.havardp.calculator.lexer
 
 import com.havardp.exception.InvalidSyntaxException
 import com.havardp.calculator.lexer.token.*
+import com.havardp.calculator.parser.VariableNode
 
 /**
  * A lexer which should be used by the parser to get tokens from a string
@@ -72,7 +73,8 @@ class Lexer(private var str: String) {
             if(OperandToken.assert(ss)){
                 // (2)3 -> (2)*3
                 // x2   -> x*2
-                if(previous is RightParenthesisToken || previous is VariableToken) return Multiplication()
+                if(previous is VariableToken || previous is OperandToken || previous is ImaginaryToken || previous is RightParenthesisToken)
+                    return Multiplication()
 
                 if(ss == "e") {
                     advance(i)
@@ -100,15 +102,18 @@ class Lexer(private var str: String) {
                 if(UnaryOperatorToken.assert(ss)
                         && (previous == null
                             || previous is LeftParenthesisToken
-                            || BinaryOperatorToken.assert(previous!!.value))) {
+                            || BinaryOperatorToken.assert(previous!!.value)))
                     return UnaryOperatorToken.acquire(ss)
-                }
+
+
                 return BinaryOperatorToken.acquire(ss)
             }
 
             // check if it is a unary operator (mostly functions)
             else if(UnaryOperatorToken.assert(ss)){
-                if(previous is RightParenthesisToken || previous is VariableToken || previous is OperandToken) return Multiplication()
+                if(previous is VariableToken || previous is OperandToken || previous is ImaginaryToken || previous is RightParenthesisToken)
+                    return Multiplication()
+
                 advance(i)
                 return UnaryOperatorToken.acquire(ss)
             }
@@ -117,7 +122,8 @@ class Lexer(private var str: String) {
             else if(ParenthesisToken.assert(ss)){
                 // 2(2) -> 2*(2)
                 // x(x) -> x*(x)
-                if(ss == "(" && previous != null && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken && previous !is LeftParenthesisToken) return Multiplication()
+                if(ss == "(" && previous != null && previous !is BinaryOperatorToken && previous !is UnaryOperatorToken && previous !is LeftParenthesisToken)
+                    return Multiplication()
 
                 advance(i)
                 return ParenthesisToken.acquire(ss)
@@ -127,10 +133,19 @@ class Lexer(private var str: String) {
             else if (VariableToken.assert(ss)){
                 // 2x   -> 2*x
                 // (2)x -> (2)*x
-                if(previous is OperandToken || previous is RightParenthesisToken) return Multiplication()
+                if(previous is VariableToken || previous is OperandToken || previous is ImaginaryToken || previous is RightParenthesisToken)
+                    return Multiplication()
 
                 advance(i)
                 return VariableToken(ss)
+            }
+
+            else if (ImaginaryToken.assert(ss)){
+                if(previous is VariableToken || previous is OperandToken || previous is ImaginaryToken || previous is RightParenthesisToken)
+                    return Multiplication()
+
+                advance(i)
+                return ImaginaryToken(ss)
             }
         }
 

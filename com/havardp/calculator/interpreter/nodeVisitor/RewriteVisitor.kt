@@ -76,6 +76,9 @@ class RewriteVisitor: NodeVisitor() {
     /** Visitor function for variable nodes, returns the node*/
     override fun visit(node: VariableNode): AbstractSyntaxTree = node
 
+    /** Visitor function for imaginary nodes, returns the node*/
+    override fun visit(node: ImaginaryNode): AbstractSyntaxTree = node
+
     private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
@@ -1802,9 +1805,9 @@ class RewriteVisitor: NodeVisitor() {
             is ArcTan -> atan(operand)
             is Sqrt -> {
                 if(operand == (-1).toDouble())
-                    TODO("return imaginary unit")
+                    return ImaginaryNode(ImaginaryToken("i"))
                 if (operand < 0)
-                    return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), OperandNode(OperandToken("1")))
+                    return BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), ImaginaryNode(ImaginaryToken("i")))
                 sqrt(operand)
             }
             is Abs -> abs(operand)

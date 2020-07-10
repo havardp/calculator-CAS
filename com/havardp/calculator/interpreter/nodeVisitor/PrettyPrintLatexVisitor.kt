@@ -34,4 +34,5 @@ class PrettyPrintLatexVisitor: NodeVisitor(){
     }
 
     override fun visit(node: VariableNode): String = node.token.value
+    override fun visit(node: ImaginaryNode): String = node.token.value
 }

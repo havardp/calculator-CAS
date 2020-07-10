@@ -94,6 +94,9 @@ class Parser(private val lexer: Lexer){
         else if(currentToken is VariableToken)
             nodeStack.push(VariableNode(currentToken))
 
+        else if(currentToken is ImaginaryToken)
+            nodeStack.push(ImaginaryNode(currentToken))
+
         else if(currentToken is UnaryOperatorToken || currentToken is LeftParenthesisToken)
             operatorStack.push(currentToken)
 
