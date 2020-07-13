@@ -1,8 +1,11 @@
-package main.com.havardp.test
+package com.havardp.test
 
 import com.havardp.calculator.interpreter.Interpreter
+import com.havardp.calculator.interpreter.OrdinaryResult
+import com.havardp.calculator.interpreter.QuadraticResult
 import com.havardp.calculator.lexer.Lexer
 import com.havardp.calculator.parser.Parser
+import com.havardp.exception.ArithmeticErrorException
 import kotlin.test.assertEquals
 import org.junit.Test
 
@@ -12,7 +15,32 @@ class Test {
         val parser = Parser(lexer)
         val interpreter = Interpreter(parser)
         val result = interpreter.interpret()
-        return result.result
+        if(result is OrdinaryResult){
+            return result.result
+        }
+        throw ArithmeticErrorException("Used evaluate function when should've used evaluate root function")
+    }
+
+    private fun evaluateFirstRoot(str: String): String{
+        val lexer = Lexer(str)
+        val parser = Parser(lexer)
+        val interpreter = Interpreter(parser)
+        val result = interpreter.interpret()
+        if(result is QuadraticResult){
+            return result.root1.result
+        }
+        throw ArithmeticErrorException("Used evaluate function when should've used evaluate root function")
+    }
+
+    private fun evaluateSecondRoot(str: String): String{
+        val lexer = Lexer(str)
+        val parser = Parser(lexer)
+        val interpreter = Interpreter(parser)
+        val result = interpreter.interpret()
+        if(result is QuadraticResult){
+            return result.root2.result
+        }
+        throw ArithmeticErrorException("Used evaluate function when should've used evaluate root function")
     }
 
     @Test
@@ -89,5 +117,17 @@ class Test {
         assertEquals("x = 2", evaluate("2x-4=0"))
         assertEquals("x = -3.5", evaluate("2x-3x+3+4+3x/(2x)+2x=3-x-3x+2+4x"))
         assertEquals("x = 2", evaluate("x^5-3=29"))
+    }
+
+    @Test
+    fun evaluateQuadratic(){
+        assertEquals("-1", evaluateFirstRoot("x^2+2x+1=0"))
+        assertEquals("-1", evaluateSecondRoot("x^2+2x+1=0"))
+    }
+
+    @Test
+    fun evaluateComplexQuadratic(){
+        assertEquals("\\frac{2 + 2.8284271247461903 \\cdot i}{2}", evaluateFirstRoot("x^2-2x+1=0"))
+        assertEquals("\\frac{2 - 2.8284271247461903 \\cdot i}{2}", evaluateSecondRoot("x^2-2x+1=0"))
     }
 }

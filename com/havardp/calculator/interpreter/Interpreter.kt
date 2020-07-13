@@ -4,18 +4,12 @@ import com.havardp.calculator.parser.*
 import com.havardp.calculator.interpreter.nodeVisitor.*
 import com.havardp.calculator.lexer.Lexer
 import com.havardp.calculator.lexer.token.*
+import com.havardp.exception.ArithmeticErrorException
 import java.math.BigDecimal
 import java.util.*
 
 class Interpreter(parser: Parser) {
-    private val treeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
-    private val rewriteVisitor = RewriteVisitor()
-    private val result = Result()
-
-    init {
-        val tree = parser.parse()
-        treeStack.push(tree)
-    }
+    private var currentTree = parser.parse()
 
     /** Used for debugging, prints the graph */
     fun printGraphTree(ast: AbstractSyntaxTree): String{
@@ -31,31 +25,39 @@ class Interpreter(parser: Parser) {
     }
 
     private fun prettyPrint(ast: AbstractSyntaxTree): String{
-        val visitor = PrettyPrintLatexVisitor() // prints the expression in infix form.
+        val visitor = PrettyPrintLatexVisitor()
         return ast.accept(visitor)
     }
 
+    // returns the result object from rewrite, or if it is a quadratic equation, the result object quadratic
     fun interpret(): Result {
-        result.input = prettyPrint(treeStack.peek())
-        rewrite()
-
-        result.result = prettyPrint(treeStack.peek())
-        return result
+        val result: OrdinaryResult = rewrite()
+        val quadraticResult = isQuadraticEquation(rewriteToQuadratic(currentTree))
+        return quadraticResult ?: result
     }
 
-    private fun rewrite() {
-        var rewrittenTree = treeStack.peek().accept(rewriteVisitor)
+    private fun rewrite(): OrdinaryResult {
+        /** the visitor instance that lets us rewrite the tree */
+        val rewriteVisitor = RewriteVisitor()
+        /** latex print of what the user inputted */
+        val input = prettyPrint(currentTree)
+        /** The rewritten tree */
+        var rewrittenTree = currentTree.accept(rewriteVisitor)
+        /** A list of all the rewritings */
+        val solveSteps = ArrayList<String>()
+        solveSteps.add(prettyPrint(currentTree))
+        /** Used for preventing crashes */
         var counter = 0
 
-        while(!rewrittenTree.equals(treeStack.peek())){
-            treeStack.push(rewrittenTree)
-            rewriteVisitor.finished = false
+        while(!rewrittenTree.equals(currentTree)){
+            currentTree = rewrittenTree
 
             /** add the change to the solution */
-            result.solveSteps.add(prettyPrint(rewrittenTree))
+            solveSteps.add(prettyPrint(currentTree))
 
             /** Do another rewrite */
-            rewrittenTree = treeStack.peek().accept(rewriteVisitor)
+            rewriteVisitor.finished = false
+            rewrittenTree = currentTree.accept(rewriteVisitor)
 
             /** code below prevents crash if there's somehow a non terminating loop in the rewrite visitor */
             counter++
@@ -65,38 +67,15 @@ class Interpreter(parser: Parser) {
             }
         }
 
-        /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the expected form */
-        if(rewrittenTree is BinaryOperatorNode && rewrittenTree.token is Equal){
-            val node = rewrittenTree
-
-            /** if x node is before x^2 node we move them */
-            if(node.left is BinaryOperatorNode && (node.left.left is VariableNode || (node.left.left is UnaryOperatorNode && node.left.left.middle is VariableNode))){
-                if(node.left.token is Plus){
-                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
-                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
-                    else
-                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), node.right), OperandNode(OperandToken("0"))))
-                }
-                if(node.left.token is Minus){
-                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
-                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
-                    else
-                        isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), node.right), OperandNode(OperandToken("0"))))
-                }
-            }
-
-            /** Since rewrite visitor moves operands to the right of equality, we just move it back here */
-            else{
-                if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
-                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), node.left, OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0"))))
-                else
-                    isQuadraticEquation(BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), node.left, node.right), OperandNode(OperandToken("0"))))
-            }
-        }
+        val result = prettyPrint(rewrittenTree)
+        // TODO, currently returning solve steps as explanation steps
+        return OrdinaryResult(input, result, solveSteps, solveSteps)
     }
 
+
+
     /** Analyses the tree, if it is a quadratic equation, then we call evaluate quadratic with the corresponding a b c values */
-    private fun isQuadraticEquation(node: AbstractSyntaxTree) {
+    private fun isQuadraticEquation(node: AbstractSyntaxTree): QuadraticResult? {
         var a: BigDecimal? = null
         var b: BigDecimal? = null
         var c: BigDecimal? = null
@@ -110,7 +89,7 @@ class Interpreter(parser: Parser) {
                     c = left.right.token.value.toBigDecimal().negate()
                 else if(left.token is Plus && left.right is OperandNode)
                     c = left.right.token.value.toBigDecimal()
-                else return
+                else return null
 
                 if(left.left is BinaryOperatorNode){
                     /** determine the value of the x factor */
@@ -128,7 +107,7 @@ class Interpreter(parser: Parser) {
                         else if(left.left.token is Minus && left.left.right.right is VariableNode && left.left.right.left is OperandNode)
                             b = left.left.right.left.token.value.toBigDecimal().negate()
                     }
-                    else return
+                    else return null
 
                     /** Determines the value of the x^2 factor */
                     if(left.left.left is BinaryOperatorNode) {
@@ -146,16 +125,53 @@ class Interpreter(parser: Parser) {
                 }
             }
         }
-        if(a != null && b != null && c != null) solveQuadraticEquation(a.toString(), b.toString(), c.toString())
+        if(a != null && b != null && c != null) return solveQuadraticEquation(a.toString(), b.toString(), c.toString(), node)
+        return null
     }
 
-    private fun solveQuadraticEquation(a: String, b: String, c: String) {
-        result.isQuadratic = true
-        result.quadraticFormula = "\\frac{-$b \\pm \\sqrt{$b^2 - 4 \\cdot $a \\cdot $c}}{2 \\cdot $a}"
+    /**
+     * rewrites to an expected form, for example after rewrite() has been called, it is probably on the form ax^2+bx=c, but we want ax^2+bx-c=0
+     * Also if b node is written before a node for example, we move them
+     */
+    private fun rewriteToQuadratic(node: AbstractSyntaxTree): AbstractSyntaxTree {
+        /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the expected form */
+        if(node is BinaryOperatorNode && node.token is Equal){
+
+            /** if x node is before x^2 node we move them */
+            if(node.left is BinaryOperatorNode && (node.left.left is VariableNode || (node.left.left is UnaryOperatorNode && node.left.left.middle is VariableNode))){
+                if(node.left.token is Plus){
+                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0")))
+                    else
+                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), node.left.right, node.left.left), node.right), OperandNode(OperandToken("0")))
+                }
+                if(node.left.token is Minus){
+                    if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0")))
+                    else
+                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), node.left.right), node.left.left), node.right), OperandNode(OperandToken("0")))
+                }
+            }
+
+            /** Since rewrite visitor moves operands to the right of equality, we just move it back here */
+            else{
+                if(node.right.token.value.toBigDecimal() < 0.toBigDecimal())
+                    return BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), node.left, OperandNode(OperandToken(node.right.token.value.toBigDecimal().negate().toString()))), OperandNode(OperandToken("0")))
+                else
+                    return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), node.left, node.right), OperandNode(OperandToken("0")))
+            }
+        }
+        return node
+    }
+
+    private fun solveQuadraticEquation(a: String, b: String, c: String, tree: AbstractSyntaxTree): QuadraticResult {
+        val input = prettyPrint(tree)
+        val quadraticFormula = "\\frac{-$b \\pm \\sqrt{$b^2 - 4 \\cdot $a \\cdot $c}}{2 \\cdot $a}"
         val root1 = Interpreter(Parser(Lexer("(-$b+sqrt($b^2-4*$a*$c))/(2*$a)"))).interpret()
         val root2 = Interpreter(Parser(Lexer("(-$b-sqrt($b^2-4*$a*$c))/(2*$a)"))).interpret()
-        result.root1 = root1
-        result.root2 = root2
+        if(root1 is OrdinaryResult && root2 is OrdinaryResult)
+            return QuadraticResult(input, quadraticFormula, root1, root2)
+        throw ArithmeticErrorException("root of quadratic is not ordinary result")
     }
 }
 

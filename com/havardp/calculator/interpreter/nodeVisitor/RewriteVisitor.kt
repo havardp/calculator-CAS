@@ -873,24 +873,108 @@ class RewriteVisitor: NodeVisitor() {
                         && left.right.right is UnaryOperatorNode)))
                     return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
 
-        //TODO this is (2+x)+(3+x), need to do this 4 times, so that we check +- -+ and -- as well
-        /**
-         *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-         *             +             ->           +
-         *       +          +        ->        +     exp1
-         *  exp1  exp2 exp3  exp4    ->     +    exp2
-         *                              exp3 exp4
-         */
         if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       +          +        ->        +     exp1
+             *  exp1  exp2 exp3  exp4    ->     +    exp2
+             *                              exp3 exp4
+             */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode)){
+                            || right.right is OperandNode && right.left !is OperandNode))
                 return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.right), left.left)
-            }
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       +          +        ->        +     exp2
+             *  exp1  exp2 exp3  exp4    ->     +    exp1
+             *                              exp3 exp4
+             */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+        }
+
+        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Plus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       -          +        ->        -     exp1
+             *  exp1  exp2 exp3  exp4    ->     +    exp2
+             *                              exp3 exp4
+             */
+            if(left.right is OperandNode && left.left !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), right, left.right), left.left)
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           -
+             *       -          +        ->        +     exp2
+             *  exp1  exp2 exp3  exp4    ->     +    exp1
+             *                              exp3 exp4
+             */
+            if(left.left is OperandNode && left.right !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+        }
+
+        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Minus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       +          -        ->        +     exp1
+             *  exp1  exp2 exp3  exp4    ->     -    exp2
+             *                              exp3 exp4
+             */
+            if(left.right is OperandNode && left.left !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.right), left.left)
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       +          -        ->        +     exp2
+             *  exp1  exp2 exp3  exp4    ->     -    exp1
+             *                              exp3 exp4
+             */
+            if(left.left is OperandNode && left.right !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+        }
+
+        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           +
+             *       -          -        ->        -     exp1
+             *  exp1  exp2 exp3  exp4    ->     -    exp2
+             *                              exp3 exp4
+             */
+            if(left.right is OperandNode && left.left !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), right, left.right), left.left)
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             +             ->           -
+             *       -          -        ->        +     exp2
+             *  exp1  exp2 exp3  exp4    ->     -    exp1
+             *                              exp3 exp4
+             */
+            if(left.left is OperandNode && left.right !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
         }
 
         finished = false
@@ -1391,27 +1475,58 @@ class RewriteVisitor: NodeVisitor() {
                         && left.right.right is UnaryOperatorNode)))
             return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
 
-        //TODO this is (2+x)-(3+x), need to do this 4 times, so that we check +- -+ and -- as well
-        /**
-         *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-         *             -             ->           +
-         *       +          +        ->        -     exp1
-         *  exp1  exp2 exp3  exp4    ->   exp2   +
-         *                                   exp3 exp4
-         */
         if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->           +
+             *       +          +        ->        -     exp1
+             *  exp1  exp2 exp3  exp4    ->   exp2   +
+             *                                   exp3 exp4
+             */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.right, right), left.left)
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->           +
+             *       +          +        ->        -     exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1   +
+             *                                   exp3 exp4
+             */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
         }
 
-        // this is same as above, just with comments inside for each since they are different
-        // with left minus and top minus, instead of left plus and top minus
+        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Minus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->           +
+             *       +          -        ->        -     exp1
+             *  exp1  exp2 exp3  exp4    ->   exp2   -
+             *                                   exp3 exp4
+             */
+            if(left.right is OperandNode && left.left !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.right, right), left.left)
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->           +
+             *       +          -        ->        -     exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1   -
+             *                                   exp3 exp4
+             */
+            if(left.left is OperandNode && left.right !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+        }
+
         if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Plus){
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
@@ -1430,6 +1545,32 @@ class RewriteVisitor: NodeVisitor() {
              *             -             ->            -
              *       -          +        ->         -    exp2
              *  exp1  exp2 exp3  exp4    ->   exp1      +
+             *                                      exp3 exp4
+             */
+            if(left.left is OperandNode && left.right !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+        }
+
+        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Minus){
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->           -
+             *       -          -        ->       exp1  +
+             *  exp1  exp2 exp3  exp4    ->        exp2   -
+             *                                        exp3 exp4
+             */
+            if(left.right is OperandNode && left.left !is OperandNode
+                    && (right.left is OperandNode && right.right !is OperandNode
+                            || right.right is OperandNode && right.left !is OperandNode))
+                return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+
+            /**
+             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
+             *             -             ->            -
+             *       -          -        ->         -    exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1      -
              *                                      exp3 exp4
              */
             if(left.left is OperandNode && left.right !is OperandNode
@@ -1822,9 +1963,7 @@ class RewriteVisitor: NodeVisitor() {
             else -> throw NotAnOperatorException("Tried to visit and operate on unary operator, but token was not unary operator")
         }
 
-        /** Returns a syntax error if the result is undefined/NaN */
-        // TODO, have a arithmetic com.havardp.calculator.exception instead
-        if(result.isNaN()) throw InvalidSyntaxException("Couldn't solve ${operator.value}(${middle.value}), the result is NaN")
+        if(result.isNaN()) throw ArithmeticErrorException("Couldn't solve ${operator.value}(${middle.value}), the result is NaN")
 
         return OperandNode(OperandToken(result.toString()))
     }

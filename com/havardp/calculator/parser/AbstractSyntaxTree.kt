@@ -19,13 +19,9 @@ class BinaryOperatorNode(token: Token, val left: AbstractSyntaxTree, val right: 
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        return otherTree is BinaryOperatorNode && token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)
-    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is BinaryOperatorNode && token.value == otherTree.token.value && left.equals(otherTree.left) && right.equals(otherTree.right)
 
-    override fun containsVariable(): Boolean{
-        return left.containsVariable() || right.containsVariable()
-    }
+    override fun containsVariable(): Boolean = left.containsVariable() || right.containsVariable()
 }
 
 class UnaryOperatorNode(token: Token, val middle: AbstractSyntaxTree): AbstractSyntaxTree(token){
@@ -34,13 +30,9 @@ class UnaryOperatorNode(token: Token, val middle: AbstractSyntaxTree): AbstractS
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        return otherTree is UnaryOperatorNode && token.value == otherTree.token.value && middle.equals(otherTree.middle)
-    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is UnaryOperatorNode && token.value == otherTree.token.value && middle.equals(otherTree.middle)
 
-    override fun containsVariable(): Boolean{
-        return middle.containsVariable()
-    }
+    override fun containsVariable(): Boolean = middle.containsVariable()
 }
 
 class OperandNode(token: Token): AbstractSyntaxTree(token){
@@ -49,9 +41,7 @@ class OperandNode(token: Token): AbstractSyntaxTree(token){
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        return otherTree is OperandNode && token.value == otherTree.token.value
-    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is OperandNode && token.value == otherTree.token.value
 
     override fun containsVariable(): Boolean = false
 }
@@ -62,9 +52,7 @@ class VariableNode(token: Token): AbstractSyntaxTree(token){
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean{
-        return otherTree is VariableNode && token.value == otherTree.token.value
-    }
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is VariableNode
 
     override fun containsVariable(): Boolean = true
 }
@@ -75,7 +63,7 @@ class ImaginaryNode(token: Token): AbstractSyntaxTree(token){
     override fun accept(visitor: PrettyPrintLatexVisitor): String = visitor.visit(this)
     override fun accept(visitor: PrintGraphTreeVisitor) = visitor.visit(this)
 
-    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is ImaginaryNode && token.value == otherTree.token.value
+    override fun equals(otherTree: AbstractSyntaxTree): Boolean = otherTree is ImaginaryNode
 
     override fun containsVariable(): Boolean = false
 }
