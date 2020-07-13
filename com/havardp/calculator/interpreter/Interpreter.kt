@@ -4,12 +4,13 @@ import com.havardp.calculator.parser.*
 import com.havardp.calculator.interpreter.nodeVisitor.*
 import com.havardp.calculator.lexer.Lexer
 import com.havardp.calculator.lexer.token.*
-import com.havardp.exception.ArithmeticErrorException
+import com.havardp.exception.*
 import java.math.BigDecimal
 import java.util.*
 
 class Interpreter(parser: Parser) {
     private var currentTree = parser.parse()
+    private var rewrittenTree = currentTree
 
     /** Used for debugging, prints the graph */
     fun printGraphTree(ast: AbstractSyntaxTree): String{
@@ -41,35 +42,44 @@ class Interpreter(parser: Parser) {
         val rewriteVisitor = RewriteVisitor()
         /** latex print of what the user inputted */
         val input = prettyPrint(currentTree)
-        /** The rewritten tree */
-        var rewrittenTree = currentTree.accept(rewriteVisitor)
         /** A list of all the rewritings */
-        val solveSteps = ArrayList<String>()
-        solveSteps.add(prettyPrint(currentTree))
+        val solveSteps = Stack<String>()
         /** Used for preventing crashes */
         var counter = 0
 
-        while(!rewrittenTree.equals(currentTree)){
+        /** Stops when rewritten and current tree are identical, when rewrite visitor couldn't do more changes */
+        do {
             currentTree = rewrittenTree
 
             /** add the change to the solution */
-            solveSteps.add(prettyPrint(currentTree))
+            solveSteps.push(prettyPrint(currentTree))
 
-            /** Do another rewrite */
+            /** Do a rewrite */
             rewriteVisitor.finished = false
-            rewrittenTree = currentTree.accept(rewriteVisitor)
+            try {
+                rewrittenTree = currentTree.accept(rewriteVisitor)
+            } catch (e: ArithmeticErrorException){
+                println(e.message)
+                break
+            } catch (e: InvalidSyntaxException){
+                println(e.message)
+                break
+            }
 
-            /** code below prevents crash if there's somehow a non terminating loop in the rewrite visitor */
+            /** prevents crash if there's somehow a non terminating loop in the rewrite visitor */
             counter++
-            if(counter > 200) {
+            if(counter > 1000) {
                 println("counter greater than 80, loop in code rewrite visitor probably")
                 break
             }
-        }
+        } while(!rewrittenTree.equals(currentTree))
+
+        val explanationSteps = rewriteVisitor.explanationSteps
+        if(solveSteps.size != explanationSteps.size)
+            throw InterpreterErrorException("The size of the explanations and rewrites differs")
 
         val result = prettyPrint(rewrittenTree)
-        // TODO, currently returning solve steps as explanation steps
-        return OrdinaryResult(input, result, solveSteps, solveSteps)
+        return OrdinaryResult(input, result, solveSteps, explanationSteps)
     }
 
 
@@ -125,7 +135,10 @@ class Interpreter(parser: Parser) {
                 }
             }
         }
-        if(a != null && b != null && c != null) return solveQuadraticEquation(a.toString(), b.toString(), c.toString(), node)
+
+        if(a != null && b != null && c != null)
+            return solveQuadraticEquation(a.toString(), b.toString(), c.toString(), node)
+
         return null
     }
 
@@ -171,7 +184,8 @@ class Interpreter(parser: Parser) {
         val root2 = Interpreter(Parser(Lexer("(-$b-sqrt($b^2-4*$a*$c))/(2*$a)"))).interpret()
         if(root1 is OrdinaryResult && root2 is OrdinaryResult)
             return QuadraticResult(input, quadraticFormula, root1, root2)
-        throw ArithmeticErrorException("root of quadratic is not ordinary result")
+        else
+            throw InterpreterErrorException("root of quadratic is not ordinary result")
     }
 }
 

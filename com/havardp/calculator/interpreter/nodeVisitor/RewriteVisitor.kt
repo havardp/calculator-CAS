@@ -5,6 +5,7 @@ import com.havardp.calculator.lexer.token.*
 import com.havardp.calculator.parser.*
 import java.math.MathContext
 import java.math.RoundingMode
+import java.util.*
 import kotlin.math.*
 
 /**
@@ -13,11 +14,18 @@ import kotlin.math.*
  * Uses post order traversal, so it will visit child notes (left first), before it tries to rewrite the current node
  *
  * The tree is represented as an abstract syntax tree, and all rewriting rules are visually explained with comments
+ *
  */
 class RewriteVisitor: NodeVisitor() {
     var finished = false
+    val explanationSteps = Stack<String>()
+    var currentExplanation = ""
     private val PRECISION = 10
     private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
+
+    init {
+        explanationSteps.push("Original Equation")
+    }
 
     /** Visitor function for binary operators */
     override fun visit(node: BinaryOperatorNode): AbstractSyntaxTree {
@@ -37,10 +45,14 @@ class RewriteVisitor: NodeVisitor() {
         if(finished) return BinaryOperatorNode(node.token, left, right)
 
         /** If both left and right child node is operands, then we can evaluate them directly */
-        if(node.left.token is OperandToken && node.right.token is OperandToken) return evaluateBinary(node.token, node.left.token, node.right.token)
+        if(node.left.token is OperandToken && node.right.token is OperandToken){
+            val evaluated = evaluateBinary(node.token, node.left.token, node.right.token)
+            explanationSteps.push(currentExplanation)
+            return evaluated
+        }
 
         /** If there has not yet been a change, then we try to rewrite the current binary operator node */
-        return when (node.token) {
+        val rewritten = when (node.token) {
             is Plus -> rewritePlus(node.token, node.left, node.right)
             is Minus -> rewriteMinus(node.token, node.left, node.right)
             is Multiplication -> rewriteMultiplication(node.token, node.left, node.right)
@@ -49,6 +61,9 @@ class RewriteVisitor: NodeVisitor() {
             is Equal -> rewriteEqual(node.token, node.left, node.right)
             else -> throw NotAnOperatorException("tried to handle non binary operator as binary operator")
         }
+        if(finished) explanationSteps.push(currentExplanation)
+
+        return rewritten
     }
 
     /** visitor function for unary operators */
@@ -65,10 +80,16 @@ class RewriteVisitor: NodeVisitor() {
         if(finished) return UnaryOperatorNode(node.token, middle)
 
         /** if child node is operand, then we evaluate it */
-        if(node.middle.token is OperandToken) return evaluateUnary(node.token, node.middle.token)
+        if(node.middle.token is OperandToken){
+            val evaluated = evaluateUnary(node.token, node.middle.token)
+            explanationSteps.push(currentExplanation)
+            return evaluated
+        }
 
         /** If there has not yet been a change, then we try to rewrite the current unary operator node */
-        return rewriteUnary(node.token, node.middle)
+        val rewritten = rewriteUnary(node.token, node.middle)
+        if(finished) explanationSteps.push(currentExplanation)
+        return rewritten
     }
 
     /** Visitor function for operand nodes, returns the node*/
