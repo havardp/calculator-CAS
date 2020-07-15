@@ -15,6 +15,8 @@ import kotlin.math.*
  *
  * The tree is represented as an abstract syntax tree, and all rewriting rules are visually explained with comments
  *
+ * This class is not DRY, i preferred ease of understanding.
+ *
  */
 class RewriteVisitor: NodeVisitor() {
     var finished = false
@@ -102,7 +104,6 @@ class RewriteVisitor: NodeVisitor() {
     private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
-        currentExplanation = ""
         /**
          *   switch expressions so that left side contains variable
          *          =         ->        =
@@ -545,7 +546,7 @@ class RewriteVisitor: NodeVisitor() {
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
             return setExplanationAndReturnNode(
                     "Remove redundant plus operator: \\(+-=-\\)",
-                    BinaryOperatorNode(Minus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+                    BinaryOperatorNode(Minus(), left, BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), right.left), right.right))
             )
 
         /**
@@ -1203,7 +1204,7 @@ class RewriteVisitor: NodeVisitor() {
             if(right.token is OperandToken)
                 return setExplanationAndReturnNode(
                         "Remove redundant zero",
-                        evaluateUnary(UnaryMinus(), right.token)
+                        UnaryOperatorNode(UnaryMinus(), right)
                 )
             return setExplanationAndReturnNode(
                     "Remove redundant zero",
@@ -1244,7 +1245,7 @@ class RewriteVisitor: NodeVisitor() {
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
             return setExplanationAndReturnNode(
                     "Change double minus to plus",
-                    BinaryOperatorNode(Plus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+                    BinaryOperatorNode(Plus(), left, BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), right.left), right.right))
             )
 
         /**
@@ -2095,9 +2096,9 @@ class RewriteVisitor: NodeVisitor() {
 
             /** Evaluate operands */
             if(right.token is OperandToken && left.left.token is OperandToken && left.right !is OperandNode)
-                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.left.token, right.token), left.right)
+                return BinaryOperatorNode(Multiplication(), BinaryOperatorNode(Divide(), left.left, right), left.right)
             if(right.token is OperandToken && left.right.token is OperandToken && left.left !is OperandNode)
-                return BinaryOperatorNode(Multiplication(), evaluateBinary(Divide(), left.right.token, right.token), left.left)
+                return BinaryOperatorNode(Multiplication(), BinaryOperatorNode(Divide(), left.right, right), left.left)
         }
 
         /**
@@ -2343,7 +2344,7 @@ class RewriteVisitor: NodeVisitor() {
         if(token is UnaryMinus && middle is BinaryOperatorNode && middle.token is Multiplication && middle.left.token is OperandToken)
                 return setExplanationAndReturnNode(
                         "Distribute minus into parenthesis",
-                        BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), middle.left.token), middle.right)
+                        BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), middle.left), middle.right)
                 )
 
 
@@ -2399,7 +2400,7 @@ class RewriteVisitor: NodeVisitor() {
                 if (operand < 0)
                     return setExplanationAndReturnNode(
                             "Separate square root of negative one",
-                            BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), evaluateUnary(UnaryMinus(), middle)), UnaryOperatorNode(Sqrt(), OperandNode(OperandToken("-1"))))
+                            BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), UnaryOperatorNode(UnaryMinus(), OperandNode(middle))), UnaryOperatorNode(Sqrt(), OperandNode(OperandToken("-1"))))
                     )
 
                 sqrt(operand)

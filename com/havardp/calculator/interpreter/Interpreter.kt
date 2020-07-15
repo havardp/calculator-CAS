@@ -75,8 +75,10 @@ class Interpreter(parser: Parser) {
         } while(!rewrittenTree.equals(currentTree))
 
         val explanationSteps = rewriteVisitor.explanationSteps
+     
         if(solveSteps.size != explanationSteps.size)
             throw InterpreterErrorException("The size of the explanations and rewrites differs")
+
 
         val result = prettyPrint(rewrittenTree)
         return OrdinaryResult(input, result, solveSteps, explanationSteps)
