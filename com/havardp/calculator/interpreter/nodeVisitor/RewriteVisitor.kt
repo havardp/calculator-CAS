@@ -19,7 +19,6 @@ import kotlin.math.*
 class RewriteVisitor: NodeVisitor() {
     var finished = false
     val explanationSteps = Stack<String>()
-    var currentExplanation = "No Explanation"
     private val PRECISION = 10
     private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
 
@@ -45,14 +44,11 @@ class RewriteVisitor: NodeVisitor() {
         if(finished) return BinaryOperatorNode(node.token, left, right)
 
         /** If both left and right child node is operands, then we can evaluate them directly */
-        if(node.left.token is OperandToken && node.right.token is OperandToken){
-            val evaluated = evaluateBinary(node.token, node.left.token, node.right.token)
-            explanationSteps.push(currentExplanation)
-            return evaluated
-        }
+        if(node.left.token is OperandToken && node.right.token is OperandToken)
+            return evaluateBinary(node.token, node.left.token, node.right.token)
 
         /** If there has not yet been a change, then we try to rewrite the current binary operator node */
-        val rewritten = when (node.token) {
+        return when (node.token) {
             is Plus -> rewritePlus(node.token, node.left, node.right)
             is Minus -> rewriteMinus(node.token, node.left, node.right)
             is Multiplication -> rewriteMultiplication(node.token, node.left, node.right)
@@ -61,9 +57,6 @@ class RewriteVisitor: NodeVisitor() {
             is Equal -> rewriteEqual(node.token, node.left, node.right)
             else -> throw NotAnOperatorException("tried to handle non binary operator as binary operator")
         }
-        if(finished) explanationSteps.push(currentExplanation)
-
-        return rewritten
     }
 
     /** visitor function for unary operators */
@@ -80,16 +73,11 @@ class RewriteVisitor: NodeVisitor() {
         if(finished) return UnaryOperatorNode(node.token, middle)
 
         /** if child node is operand, then we evaluate it */
-        if(node.middle.token is OperandToken){
-            val evaluated = evaluateUnary(node.token, node.middle.token)
-            explanationSteps.push(currentExplanation)
-            return evaluated
-        }
+        if(node.middle.token is OperandToken)
+            return evaluateUnary(node.token, node.middle.token)
 
         /** If there has not yet been a change, then we try to rewrite the current unary operator node */
-        val rewritten = rewriteUnary(node.token, node.middle)
-        if(finished) explanationSteps.push(currentExplanation)
-        return rewritten
+        return rewriteUnary(node.token, node.middle)
     }
 
     /** Visitor function for operand nodes, returns the node*/
@@ -102,8 +90,7 @@ class RewriteVisitor: NodeVisitor() {
     override fun visit(node: ImaginaryNode): AbstractSyntaxTree = node
 
     private fun setExplanationAndReturnNode(explanation: String, node: AbstractSyntaxTree): AbstractSyntaxTree{
-        currentExplanation = explanation
-        // TODO, drop currentExplanation variable, and just set explanation here every time
+        explanationSteps.push(explanation)
         return node
     }
 
