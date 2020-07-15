@@ -19,7 +19,7 @@ import kotlin.math.*
 class RewriteVisitor: NodeVisitor() {
     var finished = false
     val explanationSteps = Stack<String>()
-    var currentExplanation = ""
+    var currentExplanation = "No Explanation"
     private val PRECISION = 10
     private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
 
@@ -101,16 +101,31 @@ class RewriteVisitor: NodeVisitor() {
     /** Visitor function for imaginary nodes, returns the node*/
     override fun visit(node: ImaginaryNode): AbstractSyntaxTree = node
 
+    private fun setExplanationAndReturnNode(explanation: String, node: AbstractSyntaxTree): AbstractSyntaxTree{
+        currentExplanation = explanation
+        // TODO, drop currentExplanation variable, and just set explanation here every time
+        return node
+    }
+
+    private fun prettyPrint(node: AbstractSyntaxTree): String{
+        val visitor = PrettyPrintLatexVisitor()
+        return "\\(${node.accept(visitor)}\\)"
+    }
+
     private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
+        currentExplanation = ""
         /**
          *   switch expressions so that left side contains variable
          *          =         ->        =
          *      exp1 exp2     ->    exp2  exp1
          */
         if(right.containsVariable() && !left.containsVariable())
-            return BinaryOperatorNode(Equal(), right, left)
+            return setExplanationAndReturnNode(
+                    "Reverse the equality in order to isolate \\(x\\) to the left hand side",
+                    BinaryOperatorNode(Equal(), right, left)
+            )
 
 
         if(left.containsVariable()){
@@ -124,7 +139,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->      exp1  exp2
                      */
                     if(!left.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Minus(), right, left.left))
+                        return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(left.left)} from both sides",
+                                BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Minus(), right, left.left))
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -133,7 +151,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->      exp1  exp3
                      */
                     if(!left.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                        return return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(left.right)} from both sides",
+                                BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                        )
                 }
 
                 if(left.token is Minus){
@@ -145,7 +166,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->    exp3 exp1 exp2
                      */
                     if(!left.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), UnaryOperatorNode(UnaryMinus(), left.right), BinaryOperatorNode(Minus(), right, left.left))
+                        return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(left.left)} from both sides",
+                                BinaryOperatorNode(Equal(), UnaryOperatorNode(UnaryMinus(), left.right), BinaryOperatorNode(Minus(), right, left.left))
+                        )
                     /**
                      *   Move expression without variable to the other side
                      *         =         ->         =
@@ -153,7 +177,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->        exp1 exp3
                      */
                     if(!left.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                        return setExplanationAndReturnNode(
+                                "Add ${prettyPrint(left.right)} to both sides",
+                                BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                        )
                 }
                 if(left.token is Multiplication){
 
@@ -164,7 +191,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->        exp1 exp2
                      */
                     if(!left.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), right, left.left))
+                        return setExplanationAndReturnNode(
+                                "Divide both sides by ${prettyPrint(left.left)}",
+                                BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), right, left.left))
+                        )
                     /**
                      *   Move expression without variable to the other side
                      *         =         ->         =
@@ -172,7 +202,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->        exp1 exp3
                      */
                     if(!left.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Divide(), right, left.right))
+                        return setExplanationAndReturnNode(
+                                "Divide both sides by ${prettyPrint(left.right)}",
+                                BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Divide(), right, left.right))
+                        )
                 }
                 if(left.token is Divide){
 
@@ -185,7 +218,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->        exp2 exp1
                      */
                     if(!left.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), left.left, right))
+                        return setExplanationAndReturnNode(
+                                "Take the reciprocal of both sides, and then multiply both sides by ${prettyPrint(left.left)}",
+                                BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), left.left, right))
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -194,7 +230,10 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->        exp1 exp3
                      */
                     if(!left.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Multiplication(), right, left.right))
+                        return setExplanationAndReturnNode(
+                                "Multiply both sides by ${prettyPrint(left.right)}",
+                                BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Multiplication(), right, left.right))
+                        )
                 }
                 if(left.token is Power){
                     /**
@@ -205,7 +244,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                                 1   op
                      */
                     if(left.right is OperandNode && !right.containsVariable())
-                        return BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Power(), right, BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), left.right)))
+                        return setExplanationAndReturnNode(
+                                "Take the inverse power of ${prettyPrint(left.right)} on both sides",
+                                BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Power(), right, BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), left.right)))
+                        )
                 }
 
                 if((left.token is Plus || left.token is Minus)
@@ -220,7 +262,10 @@ class RewriteVisitor: NodeVisitor() {
                          *  exp3 exp4
                          */
                         if(left.left.left is OperandNode)
-                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.right, left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+                            return setExplanationAndReturnNode(
+                                    "Subtract ${prettyPrint(left.left.left)} from both sides",
+                                    BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.right, left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+                            )
 
                         /**
                          *   move operand to right (deeper in the tree)
@@ -230,7 +275,10 @@ class RewriteVisitor: NodeVisitor() {
                          *  exp3 exp4
                          */
                         if(left.left.right is OperandNode)
-                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Minus(), right, left.left.right))
+                            return setExplanationAndReturnNode(
+                                    "Subtract ${prettyPrint(left.left.right)} from both sides",
+                                    BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Minus(), right, left.left.right))
+                            )
                     }
 
                     if(left.left.token is Minus){
@@ -242,7 +290,10 @@ class RewriteVisitor: NodeVisitor() {
                          *  exp3 exp4              exp4
                          */
                         if(left.left.left is OperandNode)
-                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, UnaryOperatorNode(UnaryMinus(), left.left.right), left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+                            return setExplanationAndReturnNode(
+                                    "Subtract ${prettyPrint(left.left.left)} from both sides",
+                                    BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, UnaryOperatorNode(UnaryMinus(), left.left.right), left.right), BinaryOperatorNode(Minus(), right, left.left.left))
+                            )
                         /**
                          *   move operand to right (deeper in the tree)
                          *            =         ->           =
@@ -251,23 +302,30 @@ class RewriteVisitor: NodeVisitor() {
                          *  exp3 exp4
                          */
                         if(left.left.right is OperandNode)
-                            return BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Plus(), right, left.left.right))
+                            return setExplanationAndReturnNode(
+                                    "add ${prettyPrint(left.left.right)} to both sides",
+                                    BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Plus(), right, left.left.right))
+                            )
                     }
                 }
             }
+
             if(left is UnaryOperatorNode && !right.containsVariable()){
-                return when(left.token){
-                    is UnaryMinus -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Minus(), right))
-                    is UnaryPlus -> BinaryOperatorNode(Equal(), left.middle, right)
-                    is Sin -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcSin(), right))
-                    is ArcSin -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Sin(), right))
-                    is Cos -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcCos(), right))
-                    is ArcCos -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Cos(), right))
-                    is Tan -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcTan(), right))
-                    is ArcTan -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Tan(), right))
-                    is Sqrt -> BinaryOperatorNode(Equal(), left.middle, BinaryOperatorNode(Power(), right, OperandNode(OperandToken("2"))))
-                    else -> BinaryOperatorNode(Equal(), left, right)
-                }
+                return setExplanationAndReturnNode(
+                        "Take the inverse of \\(${left.token.value}\\) on both sides",
+                        when(left.token){
+                            is UnaryMinus -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Minus(), right))
+                            is UnaryPlus -> BinaryOperatorNode(Equal(), left.middle, right)
+                            is Sin -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcSin(), right))
+                            is ArcSin -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Sin(), right))
+                            is Cos -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcCos(), right))
+                            is ArcCos -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Cos(), right))
+                            is Tan -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(ArcTan(), right))
+                            is ArcTan -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Tan(), right))
+                            is Sqrt -> BinaryOperatorNode(Equal(), left.middle, BinaryOperatorNode(Power(), right, OperandNode(OperandToken("2"))))
+                            else -> BinaryOperatorNode(Equal(), left, right)
+                        }
+                )
             }
         }
 
@@ -282,7 +340,10 @@ class RewriteVisitor: NodeVisitor() {
                  *                      ->      exp2  exp3
                  */
                 if(right.left.containsVariable() && right.right.containsVariable())
-                    return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                    return setExplanationAndReturnNode(
+                            "Subtract ${prettyPrint(right)} from both sides",
+                            BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                    )
 
                 if(right.token is Plus){
 
@@ -293,7 +354,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp2
                      */
                     if(right.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        return setExplanationAndReturnNode(
+                                "subtract ${prettyPrint(right.left)} from both sides",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -302,7 +366,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp3
                      */
                     if(right.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(right.right)} from both sides",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                        )
                 }
 
                 if(right.token is Minus){
@@ -314,7 +381,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp2   exp3
                      */
                     if(right.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), UnaryOperatorNode(UnaryMinus(), right.right))
+                        return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(right.left)} from both sides",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), UnaryOperatorNode(UnaryMinus(), right.right))
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -323,7 +393,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp3
                      */
                     if(right.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Add ${prettyPrint(right.right)} to both sides",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                        )
                 }
                 if(right.token is Multiplication){
 
@@ -334,7 +407,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp2
                      */
                     if(right.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.left), right.right)
+                        return setExplanationAndReturnNode(
+                                "Divide both sides by ${prettyPrint(right.left)}",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.left), right.right)
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -343,7 +419,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp3
                      */
                     if(right.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Divide both sides by ${prettyPrint(right.right)}",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.right), right.left)
+                        )
                 }
                 if(right.token is Divide){
 
@@ -354,7 +433,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp2   1    exp3
                      */
                     if(right.left.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), right.left, left), BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right))
+                        return setExplanationAndReturnNode(
+                                "Divide both sides by ${prettyPrint(right.left)}",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), right.left, left), BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right))
+                        )
 
                     /**
                      *   Move expression without variable to the other side
@@ -363,7 +445,10 @@ class RewriteVisitor: NodeVisitor() {
                      *       exp2 exp3   ->  exp1  exp3
                      */
                     if(right.right.containsVariable())
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Multiplication(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Multiply both sides by ${prettyPrint(right.right)}",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Multiplication(), left, right.right), right.left)
+                        )
                 }
 
                 /**
@@ -375,7 +460,10 @@ class RewriteVisitor: NodeVisitor() {
                  *
                  */
                 if(right.token is Power)
-                        return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                        return setExplanationAndReturnNode(
+                                "Subtract ${prettyPrint(right)} from both sides",
+                                BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                        )
 
             }
 
@@ -387,7 +475,10 @@ class RewriteVisitor: NodeVisitor() {
              *
              */
             if(right is UnaryOperatorNode)
-                return BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                return setExplanationAndReturnNode(
+                        "Subtract ${prettyPrint(right)} from both sides",
+                        BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
+                )
         }
 
         finished = false
@@ -405,14 +496,22 @@ class RewriteVisitor: NodeVisitor() {
          *       +       ->      exp
          *    exp  0     ->
          */
-        if (right.token.value == "0") return left
+        if (right.token.value == "0")
+            return setExplanationAndReturnNode(
+                    "Remove redundant plus zero",
+                    left
+            )
 
         /**
          *   IDENTITY: remove redundant plus zero
          *       +       ->      exp
          *     0  exp    ->
          */
-        if(left.token.value == "0") return right
+        if(left.token.value == "0")
+            return setExplanationAndReturnNode(
+                    "Remove redundant plus zero",
+                    right
+            )
 
         /**
          *   DISTRIBUTION: Adds two equal expressions together (not operands)
@@ -420,7 +519,10 @@ class RewriteVisitor: NodeVisitor() {
          *   exp1  exp1    ->      2  exp1
          */
         if(left !is OperandNode && left.equals(right))
-            return BinaryOperatorNode(Multiplication(), OperandNode(OperandToken("2")), left)
+            return setExplanationAndReturnNode(
+                    "Distribution: ${prettyPrint(right)}\\(+\\)${prettyPrint(right)}\\(=2 \\cdot \\)${prettyPrint(left)}",
+                    BinaryOperatorNode(Multiplication(), OperandNode(OperandToken("2")), left)
+            )
 
         /**
          *   change unary minus to actual minus
@@ -429,7 +531,10 @@ class RewriteVisitor: NodeVisitor() {
          *        exp2
          */
         if(right is UnaryOperatorNode && right.token is UnaryMinus && right.middle !is UnaryOperatorNode)
-            return BinaryOperatorNode(Minus(), left, right.middle)
+            return setExplanationAndReturnNode(
+                    "Remove redundant plus operator: \\(+-=-\\)",
+                    BinaryOperatorNode(Minus(), left, right.middle)
+            )
 
         /**
          *   ADDITIVE INVERSE
@@ -438,7 +543,10 @@ class RewriteVisitor: NodeVisitor() {
          *   exp1
          */
         if(left is UnaryOperatorNode && left.token is UnaryMinus && left.middle.equals(right))
-            return OperandNode(OperandToken("0"))
+            return setExplanationAndReturnNode(
+                    "Adding anything with it's inverse gives 0",
+                    OperandNode(OperandToken("0"))
+            )
 
         /**
          *   Change plus negative op to minus positive op
@@ -448,7 +556,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is BinaryOperatorNode && right.token is Multiplication
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
-            return BinaryOperatorNode(Minus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+            return setExplanationAndReturnNode(
+                    "Remove redundant plus operator: \\(+-=-\\)",
+                    BinaryOperatorNode(Minus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+            )
 
         /**
          *   Move to the same fraction if denominator is equal
@@ -457,7 +568,10 @@ class RewriteVisitor: NodeVisitor() {
          * exp1 exp2 exp3 ex4    ->   exp1 exp3
          */
         if(left is BinaryOperatorNode && left.token is Divide && right is BinaryOperatorNode && right.token is Divide && left.right.equals(right.right))
-            return BinaryOperatorNode(Divide(), BinaryOperatorNode(Plus(), left.left, right.left), left.right)
+            return setExplanationAndReturnNode(
+                    "Move numerators to a common fraction since the denominator is equivalent",
+                    BinaryOperatorNode(Divide(), BinaryOperatorNode(Plus(), left.left, right.left), left.right)
+            )
 
         /** COMMUTATIVITY && ASSOCIATIVITY */
         if(left is BinaryOperatorNode){
@@ -467,12 +581,15 @@ class RewriteVisitor: NodeVisitor() {
                  *   COMMUTATIVITY && ASSOCIATIVITY: move variable and operands together so we can evaluate them
                  *   where exp1 = exp3 && exp2 != exp3
                  *         +            ->           +
-                 *      +    exp1       ->        +    exp2
-                 *  exp2  exp3          ->   exp1  exp3
+                 *      +    exp1       ->      exp2    +
+                 *  exp2  exp3          ->         exp3  exp1
                  */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
-                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left.right, right), left.left)
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(token, BinaryOperatorNode(token, left.right, right), left.left)
+                    )
 
                 /**
                  *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
@@ -483,7 +600,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
-                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left.left, right), left.right)
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(token, BinaryOperatorNode(token, left.left, right), left.right)
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -501,7 +621,10 @@ class RewriteVisitor: NodeVisitor() {
                                     || left.left.left.equals(left.right.right)
                                     || left.left.right.equals(left.right.left)
                                     || left.left.right.equals(left.right.right))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    )
 
                 if(right is BinaryOperatorNode && right.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)) {
@@ -512,7 +635,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->             exp3 exp4
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
-                        return BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Plus(), left.left, right))
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(left.left)} right",
+                                BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Plus(), left.left, right))
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            +
@@ -521,7 +647,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->             exp3 exp4
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
-                        return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                        return setExplanationAndReturnNode(
+                                "No explanation (does not occur change in output)",
+                                BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                        )
                 }
 
                 /**
@@ -541,7 +670,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.left)
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    )
 
             }
             else if (left.token is Minus){
@@ -554,17 +686,23 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
-                    return BinaryOperatorNode(token, left.left, BinaryOperatorNode(left.token, right, left.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(token, left.left, BinaryOperatorNode(left.token, right, left.right))
+                    )
 
                 /**
                  *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
                  *           +            ->           -
                  *        -    exp1       ->        +    exp3
-                 *   exp2  exp3           ->   exp1   exp2
+                 *   exp2  exp3           ->   exp2   exp1
                  */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
-                    return BinaryOperatorNode(left.token, BinaryOperatorNode(token, right, left.left), left.right)
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(left.token, BinaryOperatorNode(token, left.left, right), left.right)
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -582,7 +720,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.right)
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                    )
 
                 if(right is BinaryOperatorNode && right.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)){
@@ -593,7 +734,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->       exp3 exp4
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
-                        return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(right)} left",
+                                BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            +
@@ -602,7 +746,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->       exp3 exp4
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
-                        return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(right)} left",
+                                BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                        )
                 }
 
                 /**
@@ -622,7 +769,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.left)
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                    )
             }
         }
 
@@ -638,7 +788,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
-                    return BinaryOperatorNode(token, right.left, BinaryOperatorNode(token, right.right, left))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(token, right.left, BinaryOperatorNode(token, right.right, left))
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
@@ -649,7 +802,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
-                    return BinaryOperatorNode(token, BinaryOperatorNode(token, left, right.left), right.right)
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(token, BinaryOperatorNode(token, left, right.left), right.right)
+                    )
 
                 /**
                  *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -667,27 +823,36 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.right)
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    )
 
                 if(left is BinaryOperatorNode && left.token is Multiplication && !left.right.equals(left.left)
                         && !right.left.equals(right.right) && !left.left.equals(left.right)){
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            +
-                     *       *          +         ->        exp4  +
-                     *   exp1 exp2  exp3 exp4     ->          exp3   *
-                     *                            ->             exp1 exp2
+                     *       *          +         ->         +     exp4
+                     *   exp1 exp2  exp3 exp4     ->      *    exp3
+                     *                            ->  exp1 exp2
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
-                        return BinaryOperatorNode(Plus(),  right.right, BinaryOperatorNode(Plus(), right.left, left))
+                        return setExplanationAndReturnNode(
+                                "No explanation (does not occur change in output)",
+                                BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left, right.left), right.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            +
-                     *       *         +          ->       exp3   +
-                     *   exp1 exp2 exp3 exp4      ->          exp4 *
-                     *                            ->           exp3 exp4
+                     *       *          +         ->         +     exp3
+                     *   exp1 exp2  exp3 exp4     ->      *    exp4
+                     *                            ->  exp1 exp2
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
-                        return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), right.right, left))
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(right.right)} left",
+                                BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                        )
                 }
 
                 /**
@@ -707,7 +872,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.left)
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    )
             }
             if (right.token is Minus){
 
@@ -720,7 +888,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
@@ -731,7 +902,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.left), right.right)
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.left), right.right)
+                    )
 
                 /**
                  *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -749,27 +923,36 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.right)
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    )
 
                 if(left is BinaryOperatorNode && left.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)){
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            -
                      *       *          -         ->          +  exp4
-                     *   exp1 exp2  exp3 exp4     ->        exp3   *
-                     *                            ->           exp1 exp2
+                     *   exp1 exp2  exp3 exp4     ->       *   exp3
+                     *                            ->   exp1 exp2
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
-                        return BinaryOperatorNode(Minus(),  BinaryOperatorNode(Plus(), right.left, left), right.right)
+                        return setExplanationAndReturnNode(
+                                "No explanation (does not occur change in output)",
+                                BinaryOperatorNode(Minus(),  BinaryOperatorNode(Plus(), left, right.left), right.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            +               ->            +
-                     *       *         -          ->       exp3   -
-                     *   exp1 exp2 exp3 exp4      ->            *  exp4
-                     *                            ->        exp1 exp2
+                     *       *         -          ->         -    exp3
+                     *   exp1 exp2 exp3 exp4      ->       *  exp4
+                     *                            ->   exp1 exp2
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
-                        return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(right.right)} left",
+                                BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                        )
                 }
 
                 /**
@@ -789,7 +972,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.left)
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left)} right",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
+                    )
             }
         }
 
@@ -800,10 +986,29 @@ class RewriteVisitor: NodeVisitor() {
          */
         if (left is BinaryOperatorNode && right is BinaryOperatorNode){
             if(left.token is Multiplication && right.token is Multiplication){
-                if(left.left.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.right))
-                if(left.left.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.left))
-                if(left.right.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.right))
-                if(left.right.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.left))
+                if(left.left.equals(right.left))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.left)}",
+                            BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.right))
+                    )
+
+                if(left.left.equals(right.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.left)}",
+                            BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.left))
+                    )
+
+                if(left.right.equals(right.left))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.right)}",
+                            BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.right))
+                    )
+
+                if(left.right.equals(right.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.right)}",
+                            BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.left))
+                    )
             }
         }
         /** DISTRIBUTIVITY: when we have for example 3x + x -> (3+1)x */
@@ -814,14 +1019,21 @@ class RewriteVisitor: NodeVisitor() {
              *   exp2  exp3         ->         exp2   1
              */
             if (left.right.equals(right))
-                return BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.left, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(right)}",
+                        BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.left, OperandNode(OperandToken("1"))))
+                )
+
             /**  Distributes the expression out and replaces it by "1"
              *          +           ->            *
              *       *    exp1      ->      exp1    +
              *   exp2  exp3         ->         exp3   1
              */
             if (left.left.equals(right))
-                return BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.right, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(left.right)}",
+                        BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.right, OperandNode(OperandToken("1"))))
+                )
         }
 
         /** DISTRIBUTIVITY: when we have for example 3x + x -> (3+1)x */
@@ -832,14 +1044,21 @@ class RewriteVisitor: NodeVisitor() {
              *         exp2  exp3   ->         exp2   1
              */
             if (right.right.equals(left))
-                return BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.left, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(left)}",
+                        BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.left, OperandNode(OperandToken("1"))))
+                )
+
             /**  Distributes the expression out and replaces it by "1"
              *          +           ->            *
              *     exp1    *        ->      exp1    +
              *         exp2  exp3   ->         exp3   1
              */
             if (right.left.equals(left))
-                return BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.right, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(left)}",
+                        BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.right, OperandNode(OperandToken("1"))))
+                )
         }
 
         /**
@@ -849,7 +1068,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if((left.token is Multiplication || left.token is Divide || left is UnaryOperatorNode && (left.token !is UnaryMinus || left.middle is UnaryOperatorNode))
                 && !(right.token is Multiplication || right.token is Divide || right is UnaryOperatorNode && (right.token !is UnaryMinus || right.middle is UnaryOperatorNode)))
-            return BinaryOperatorNode(Plus(), right, left)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(left)} right",
+                    BinaryOperatorNode(Plus(), right, left)
+            )
 
         /**
          *  COMMUTATIVITY: move multiplication operator to the right if it contains unary operator and the other one does not
@@ -859,7 +1081,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Multiplication && left.right is UnaryOperatorNode
                 && right is BinaryOperatorNode && right.token is Multiplication && right.right !is UnaryOperatorNode && right.left !is UnaryOperatorNode)
-            return BinaryOperatorNode(Plus(), right, left)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(left)} right",
+                    BinaryOperatorNode(Plus(), right, left)
+            )
 
         /**
          *   COMMUTATIVITY AND ASSOCIATIVITY: Move unary operators (or multiplication with unary) up the tree
@@ -875,7 +1100,10 @@ class RewriteVisitor: NodeVisitor() {
                         || (left.right is BinaryOperatorNode
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
-                    return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                    )
 
 
         /**
@@ -892,110 +1120,73 @@ class RewriteVisitor: NodeVisitor() {
                         || (left.right is BinaryOperatorNode
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} Left",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                    )
 
-        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
+        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && (right.token is Plus || right.token is Minus)){
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             +             ->           +
-             *       +          +        ->        +     exp1
-             *  exp1  exp2 exp3  exp4    ->     +    exp2
-             *                              exp3 exp4
+             *       +          +-        ->     exp1      +
+             *  exp1  exp2 exp3  exp4    ->         exp2      +-
+             *                                            exp3 exp4
              */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.right), left.left)
+                return setExplanationAndReturnNode(
+                        "No explanation (does not occur change in output)",
+                        BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                )
 
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             +             ->           +
-             *       +          +        ->        +     exp2
-             *  exp1  exp2 exp3  exp4    ->     +    exp1
-             *                              exp3 exp4
+             *       +          +-        ->     exp2      +
+             *  exp1  exp2 exp3  exp4    ->         exp1     +-
+             *                                            exp3 exp4
              */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+                return setExplanationAndReturnNode(
+                        "Move ${prettyPrint(left.left)} right",
+                        BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+                )
         }
 
-        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Plus){
+        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && (right.token is Plus || right.token is Minus)){
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             +             ->           +
-             *       -          +        ->        -     exp1
-             *  exp1  exp2 exp3  exp4    ->     +    exp2
-             *                              exp3 exp4
+             *       -          +-        ->      exp1   -
+             *  exp1  exp2 exp3  exp4    ->          +-    exp2
+             *                                   exp3 exp4
              */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), right, left.right), left.left)
+                return setExplanationAndReturnNode(
+                        "Move ${prettyPrint(left.right)} right",
+                        BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
+                )
 
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             +             ->           -
-             *       -          +        ->        +     exp2
-             *  exp1  exp2 exp3  exp4    ->     +    exp1
-             *                              exp3 exp4
+             *       -          +-        ->        +    exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1   +-
+             *                                   exp3 exp4
              */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
-        }
-
-        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Minus){
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             +             ->           +
-             *       +          -        ->        +     exp1
-             *  exp1  exp2 exp3  exp4    ->     -    exp2
-             *                              exp3 exp4
-             */
-            if(left.right is OperandNode && left.left !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.right), left.left)
-
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             +             ->           +
-             *       +          -        ->        +     exp2
-             *  exp1  exp2 exp3  exp4    ->     -    exp1
-             *                              exp3 exp4
-             */
-            if(left.left is OperandNode && left.right !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
-        }
-
-        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             +             ->           +
-             *       -          -        ->        -     exp1
-             *  exp1  exp2 exp3  exp4    ->     -    exp2
-             *                              exp3 exp4
-             */
-            if(left.right is OperandNode && left.left !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), right, left.right), left.left)
-
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             +             ->           -
-             *       -          -        ->        +     exp2
-             *  exp1  exp2 exp3  exp4    ->     -    exp1
-             *                              exp3 exp4
-             */
-            if(left.left is OperandNode && left.right !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
+                return setExplanationAndReturnNode(
+                        "Move ${prettyPrint(right)} left",
+                        BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
+                )
         }
 
         finished = false
@@ -1010,7 +1201,11 @@ class RewriteVisitor: NodeVisitor() {
          *       -       ->      exp
          *    exp  0     ->
          */
-        if (right.token.value == "0") return left
+        if (right.token.value == "0")
+            return setExplanationAndReturnNode(
+                    "Remove redundant minus zero",
+                    left
+            )
 
         /**
          *   IDENTITY: remove redundant plus zero
@@ -1018,8 +1213,15 @@ class RewriteVisitor: NodeVisitor() {
          *     0  exp    ->     exp
          */
         if(left.token.value == "0") {
-            if(right.token is OperandToken) return evaluateUnary(UnaryMinus(), right.token)
-            return UnaryOperatorNode(UnaryMinus() ,right)
+            if(right.token is OperandToken)
+                return setExplanationAndReturnNode(
+                        "Remove redundant zero",
+                        evaluateUnary(UnaryMinus(), right.token)
+                )
+            return setExplanationAndReturnNode(
+                    "Remove redundant zero",
+                    UnaryOperatorNode(UnaryMinus() ,right)
+            )
         }
 
         /**
@@ -1027,7 +1229,11 @@ class RewriteVisitor: NodeVisitor() {
          *        -        ->        0
          *   exp1  exp1    ->
          */
-        if(left.equals(right)) return OperandNode(OperandToken("0"))
+        if(left.equals(right))
+            return setExplanationAndReturnNode(
+                    "Subtracting anything with itself gives 0",
+                    OperandNode(OperandToken("0"))
+            )
 
         /**
          *   change unary minus to plus
@@ -1036,7 +1242,10 @@ class RewriteVisitor: NodeVisitor() {
          *        exp2
          */
         if(right is UnaryOperatorNode && right.token is UnaryMinus && left !is UnaryOperatorNode)
-            return BinaryOperatorNode(Plus(), left, right.middle)
+            return setExplanationAndReturnNode(
+                    "Change double minus to plus",
+                    BinaryOperatorNode(Plus(), left, right.middle)
+            )
 
         /**
          *   Change minus negative op to plus positive op
@@ -1046,7 +1255,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is BinaryOperatorNode && right.token is Multiplication
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
-            return BinaryOperatorNode(Plus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+            return setExplanationAndReturnNode(
+                    "Change double minus to plus",
+                    BinaryOperatorNode(Plus(), left, BinaryOperatorNode(Multiplication(), evaluateUnary(UnaryMinus(), right.left.token), right.right))
+            )
 
         /**
          *   Move to the same fraction if denominator is equal
@@ -1055,7 +1267,10 @@ class RewriteVisitor: NodeVisitor() {
          * exp1 exp2 exp3 ex4    ->   exp1 exp3
          */
         if(left is BinaryOperatorNode && left.token is Divide && right is BinaryOperatorNode && right.token is Divide && left.right.equals(right.right))
-            return BinaryOperatorNode(Divide(), BinaryOperatorNode(Minus(), left.left, right.left), left.right)
+            return setExplanationAndReturnNode(
+                    "Move numerators to a common fraction since the denominator is equivalent",
+                    BinaryOperatorNode(Divide(), BinaryOperatorNode(Minus(), left.left, right.left), left.right)
+            )
 
         /** COMMUTATIVITY && ASSOCIATIVITY */
         if(left is BinaryOperatorNode){
@@ -1070,7 +1285,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    )
 
                 /**
                  *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
@@ -1081,7 +1299,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
-                    return BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right))
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(left.left)} right",
+                            BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right))
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -1099,7 +1320,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.right)
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    )
 
                 if(right is BinaryOperatorNode && right.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)){
@@ -1110,7 +1334,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->             exp3 exp4
                      */
                     if ((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
-                        return BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right) )
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(left.left)} right",
+                                BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right) )
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            -               ->            +
@@ -1119,7 +1346,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->             exp3 exp4
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
-                        return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                        return setExplanationAndReturnNode(
+                                "No explanation (does not occur change in output)",
+                                BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                        )
                 }
 
                 /**
@@ -1139,7 +1369,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.left)
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
-                    return BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "No explanation (does not occur change in output)",
+                            BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                    )
             }
             else if (left.token is Minus){
                 /**
@@ -1151,7 +1384,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
-                    return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    return setExplanationAndReturnNode(
+                            "Distribute minus out of parenthesis",
+                            BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    )
 
                 /**
                  *   COMMUTATIVE && ASSOCIATIVITY: move variable and operands together so we can evaluate them
@@ -1161,15 +1397,18 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                    return setExplanationAndReturnNode(
+                            "Move ${prettyPrint(right)} left",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
                  *   Where exp3 = exp1 || exp4 = exp1
                  *           -             ->           -
                  *        -    exp1        ->      exp2   +
-                 *   exp2   *              ->           exp1  *
-                 *      exp3 exp4          ->            exp3  exp4
+                 *   exp2   *              ->            *  exp1
+                 *      exp3 exp4          ->       exp3  exp4
                  */
                 if(left.right is BinaryOperatorNode && left.right.token is Multiplication
                         && right.token !is Multiplication && right !is OperandNode
@@ -1179,7 +1418,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.right)
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
-                    return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute minus out of parenthesis",
+                            BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                    )
 
                 if(right is BinaryOperatorNode && right.token is Multiplication && !left.right.equals(left.left)
                         && !right.left.equals(right.right)){
@@ -1190,7 +1432,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->       exp3 exp4
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
-                        return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                        return setExplanationAndReturnNode(
+                                "Move ${prettyPrint(right)} left",
+                                BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            -               ->            -
@@ -1199,7 +1444,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->        exp3 exp4
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
-                        return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                        return setExplanationAndReturnNode(
+                                "Distribute minus out of parenthesis",
+                                BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                        )
                 }
 
 
@@ -1220,7 +1468,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.left.equals(left.right.left)
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
-                    return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute minus out of parenthesis",
+                            BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
+                    )
             }
         }
 
@@ -1236,8 +1487,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
-
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
@@ -1248,7 +1501,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                    return setExplanationAndReturnNode(
+                            "Distribute minus out of parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                    )
 
                 /**
                  *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -1266,7 +1522,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.right)
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                    )
 
                 if(left is BinaryOperatorNode && left.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)){
@@ -1277,7 +1536,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->  exp1 exp2
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
-                        return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        return setExplanationAndReturnNode(
+                                "Distribute minus into parenthesis",
+                                BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            -               ->            -
@@ -1286,7 +1548,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->  exp1 exp2
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
-                        return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Distribute minus into parenthesis",
+                                BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
+                        )
                 }
 
                 /**
@@ -1306,7 +1571,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.left)
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
-                    return BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
+                    )
             }
             else if (right.token is Minus){
                 /**
@@ -1318,8 +1586,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
-
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                    )
 
                 /**
                  *   ASSOCIATIVITY: move variable and operands together so we can evaluate them (also if expressions are equal)
@@ -1330,7 +1600,10 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
-                    return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
+                    )
 
                 /**
                  *   COMMUTATIVITY && ASSOCIATIVITY: move equal expressions together so we can use distributive laws on them
@@ -1348,7 +1621,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.right)
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                    )
 
                 if(left is BinaryOperatorNode && left.token is Multiplication
                         && !left.right.equals(left.left) && !right.left.equals(right.right)) {
@@ -1359,7 +1635,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->    exp1 exp2
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
-                        return BinaryOperatorNode(Plus(),  BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        return setExplanationAndReturnNode(
+                                "Distribute minus into parenthesis",
+                                BinaryOperatorNode(Plus(),  BinaryOperatorNode(Minus(), left, right.left), right.right)
+                        )
 
                     /**  COMMUTATIVITY AND ASSOCIATIVITY: move equal expressions closer together
                      *            -               ->            -
@@ -1368,7 +1647,10 @@ class RewriteVisitor: NodeVisitor() {
                      *                            ->  exp1 exp2
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
-                        return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                        return setExplanationAndReturnNode(
+                                "Distribute minus into parenthesis",
+                                BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                        )
                 }
 
                 /**
@@ -1388,8 +1670,10 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.left.equals(right.right.left)
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
-                    return BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
-
+                    return setExplanationAndReturnNode(
+                            "Distribute minus into parenthesis",
+                            BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
+                    )
             }
         }
 
@@ -1400,10 +1684,29 @@ class RewriteVisitor: NodeVisitor() {
          */
         if (left is BinaryOperatorNode && right is BinaryOperatorNode){
             if(left.token is Multiplication && right.token is Multiplication){
-                if(left.left.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
-                if(left.left.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.left))
-                if(left.right.equals(right.left)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.right))
-                if(left.right.equals(right.right)) return BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.left))
+                if(left.left.equals(right.left))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.left)}",
+                            BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
+                    )
+
+                if(left.left.equals(right.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.left)}",
+                            BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.left))
+                    )
+
+                if(left.right.equals(right.left))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.right)}",
+                            BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.right))
+                    )
+
+                if(left.right.equals(right.right))
+                    return setExplanationAndReturnNode(
+                            "Distribute out ${prettyPrint(left.right)}",
+                            BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.left))
+                    )
             }
         }
 
@@ -1415,14 +1718,21 @@ class RewriteVisitor: NodeVisitor() {
              *   exp2  exp3         ->         exp2   1
              */
             if (left.right.equals(right))
-                return BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.left, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(right)}",
+                        BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.left, OperandNode(OperandToken("1"))))
+                )
+
             /**  Distributes the expression out and replaces it by "1"
              *          -           ->            *
              *       *    exp1      ->      exp1    -
              *   exp2  exp3         ->         exp3   1
              */
             if (left.left.equals(right))
-                return BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.right, OperandNode(OperandToken("1"))))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(right)}",
+                        BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.right, OperandNode(OperandToken("1"))))
+                )
         }
 
         /** DISTRIBUTIVITY: when we have for example 3x + x -> (3+1)x */
@@ -1433,14 +1743,21 @@ class RewriteVisitor: NodeVisitor() {
              *         exp2  exp3   ->           1     exp2
              */
             if (right.right.equals(left))
-                return BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Minus(), OperandNode(OperandToken("1")), right.left))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(left)}",
+                        BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Minus(), OperandNode(OperandToken("1")), right.left))
+                )
+
             /**  Distributes the expression out and replaces it by "1"
              *          -           ->            *
              *     exp1    *        ->      exp1    -
              *         exp2  exp3   ->           1    exp3
              */
             if (right.left.equals(left))
-                return BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), OperandNode(OperandToken("1")), right.right))
+                return setExplanationAndReturnNode(
+                        "Distribute out ${prettyPrint(left)}",
+                        BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), OperandNode(OperandToken("1")), right.right))
+                )
         }
 
         /**
@@ -1451,7 +1768,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if((left.token is Multiplication || left.token is Divide || left is UnaryOperatorNode && (left.token !is UnaryMinus || left.middle is UnaryOperatorNode))
                 && !(right.token is Multiplication || right.token is Divide || right is UnaryOperatorNode && (right.token !is UnaryMinus || right.middle is UnaryOperatorNode)))
-            return BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(),right), left)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(left)} right",
+                    BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(),right), left)
+            )
 
         /**
          *  COMMUTATIVITY: move multiplication operator to the right if it contains unary operator and the other one does not
@@ -1462,7 +1782,10 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Multiplication && left.right is UnaryOperatorNode
                 && right is BinaryOperatorNode && right.token is Multiplication && right.right !is UnaryOperatorNode && right.left !is UnaryOperatorNode)
-            return BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), right), left)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(left)} right",
+                    BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), right), left)
+            )
 
         /**
          *   COMMUTATIVITY AND ASSOCIATIVITY: Move unary operators (or multiplication with unary) up the tree
@@ -1478,7 +1801,10 @@ class RewriteVisitor: NodeVisitor() {
                         || (left.right is BinaryOperatorNode
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
-            return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(right)} left",
+                    BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+            )
 
         /**
          *   COMMUTATIVITY AND ASSOCIATIVITY: Move unary operators (or multiplication with unary) up the tree
@@ -1494,110 +1820,72 @@ class RewriteVisitor: NodeVisitor() {
                         || (left.right is BinaryOperatorNode
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
-            return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+            return setExplanationAndReturnNode(
+                    "Move ${prettyPrint(right)} left",
+                    BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+            )
 
-        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Plus){
+        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && (right.token is Plus || right.token is Minus)){
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             -             ->           +
-             *       +          +        ->        -     exp1
-             *  exp1  exp2 exp3  exp4    ->   exp2   +
-             *                                   exp3 exp4
+             *             -             ->            +
+             *       +          +-        ->        exp1   -
+             *  exp1  exp2 exp3  exp4    ->          exp2   +-
+             *                                          exp3 exp4
              */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.right, right), left.left)
+                return setExplanationAndReturnNode(
+                        "No explanation (does not occur change in output)",
+                        BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
+                )
 
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             -             ->           +
-             *       +          +        ->        -     exp2
-             *  exp1  exp2 exp3  exp4    ->   exp1   +
+             *       +          +-        ->        -     exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1   +-
              *                                   exp3 exp4
              */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                return setExplanationAndReturnNode(
+                        "Move ${prettyPrint(left.right)} right",
+                        BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                )
         }
 
-        if (left is BinaryOperatorNode && left.token is Plus && right is BinaryOperatorNode && right.token is Minus){
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             -             ->           +
-             *       +          -        ->        -     exp1
-             *  exp1  exp2 exp3  exp4    ->   exp2   -
-             *                                   exp3 exp4
-             */
-            if(left.right is OperandNode && left.left !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.right, right), left.left)
-
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             -             ->           +
-             *       +          -        ->        -     exp2
-             *  exp1  exp2 exp3  exp4    ->   exp1   -
-             *                                   exp3 exp4
-             */
-            if(left.left is OperandNode && left.right !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
-        }
-
-        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Plus){
+        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && (right.token is Plus || right.token is Minus)){
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             -             ->           -
-             *       -          +        ->       exp1  +
-             *  exp1  exp2 exp3  exp4    ->        exp2   +
-             *                                        exp3 exp4
+             *       -          +-        ->       exp1  +
+             *  exp1  exp2 exp3  exp4    ->         exp2   +-
+             *                                         exp3 exp4
              */
             if(left.right is OperandNode && left.left !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
-
+                return setExplanationAndReturnNode(
+                        "Distribute minus out of parenthesis",
+                        BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
+                )
             /**
              *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
              *             -             ->            -
-             *       -          +        ->         -    exp2
-             *  exp1  exp2 exp3  exp4    ->   exp1      +
+             *       -          +-        ->         -    exp2
+             *  exp1  exp2 exp3  exp4    ->   exp1      +-
              *                                      exp3 exp4
              */
             if(left.left is OperandNode && left.right !is OperandNode
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
-        }
-
-        if (left is BinaryOperatorNode && left.token is Minus && right is BinaryOperatorNode && right.token is Minus){
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             -             ->           -
-             *       -          -        ->       exp1  +
-             *  exp1  exp2 exp3  exp4    ->        exp2   -
-             *                                        exp3 exp4
-             */
-            if(left.right is OperandNode && left.left !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
-
-            /**
-             *   COMMUTATIVITY AND ASSOCIATIVITY: move operands or variables closer together
-             *             -             ->            -
-             *       -          -        ->         -    exp2
-             *  exp1  exp2 exp3  exp4    ->   exp1      -
-             *                                      exp3 exp4
-             */
-            if(left.left is OperandNode && left.right !is OperandNode
-                    && (right.left is OperandNode && right.right !is OperandNode
-                            || right.right is OperandNode && right.left !is OperandNode))
-                return BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                return setExplanationAndReturnNode(
+                        "Move ${prettyPrint(right)} left",
+                        BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
+                )
         }
 
         finished = false
@@ -2013,7 +2301,7 @@ class RewriteVisitor: NodeVisitor() {
                 /** if left is negative and right is not whole number, don't know yet the best way to handle this*/
                 if (operand1 < 0.toBigDecimal() && right.value.toIntOrNull() == null)
                     throw ArithmeticErrorException("Sorry, this calculator can't handle ${left.value}${operator.value}${right.value}")
-
+                    // TODO make errors latex also
                 operand1.toDouble().pow(operand2.toDouble()).toBigDecimal()
             }
             is Modulus -> operand1.remainder(operand2, CONTEXT)

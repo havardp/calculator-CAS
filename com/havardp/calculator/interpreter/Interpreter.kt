@@ -27,7 +27,7 @@ class Interpreter(parser: Parser) {
 
     private fun prettyPrint(ast: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor()
-        return ast.accept(visitor)
+        return "\\(${ast.accept(visitor)}\\)"
     }
 
     // returns the result object from rewrite, or if it is a quadratic equation, the result object quadratic
