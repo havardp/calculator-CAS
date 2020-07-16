@@ -57,7 +57,6 @@ class Lexer(private var str: String) {
      *
      *  @return the token we extracted
      */
-    // TODO might make this not a for loop, but instead do checks, and call functions which check next 2 for functions, and while loop for operands.
     private fun extractToken() : Token {
         for(i in 0 until str.length - pointer){
             // The index of $str that we are currently analysing, actually the index of the string after the current

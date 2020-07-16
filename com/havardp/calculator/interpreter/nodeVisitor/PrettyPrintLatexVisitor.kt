@@ -5,6 +5,7 @@ import com.havardp.calculator.parser.*
 import java.lang.ArithmeticException
 import java.math.RoundingMode
 
+/** Prints an abstract syntax tree to latex format */
 class PrettyPrintLatexVisitor: NodeVisitor(){
     override fun visit(node: BinaryOperatorNode): String {
         if(node.token is Divide)

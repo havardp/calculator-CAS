@@ -3,8 +3,9 @@ package com.havardp.calculator.parser
 import com.havardp.calculator.interpreter.nodeVisitor.*
 import com.havardp.calculator.lexer.token.Token
 
+/**  https://en.wikipedia.org/wiki/Abstract_syntax_tree  */
 abstract class AbstractSyntaxTree(val token: Token){
-    abstract fun accept(visitor: RewriteVisitor): AbstractSyntaxTree // the rewrite visitor which recursively returns the nodes to build the tree
+    abstract fun accept(visitor: RewriteVisitor): AbstractSyntaxTree
     abstract fun accept(visitor: PrettyPrintVisitor): String
     abstract fun accept(visitor: PrettyPrintLatexVisitor): String
     abstract fun accept(visitor: PrintGraphTreeVisitor)

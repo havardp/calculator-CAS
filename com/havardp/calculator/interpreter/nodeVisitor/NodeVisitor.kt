@@ -2,11 +2,11 @@ package com.havardp.calculator.interpreter.nodeVisitor
 
 import com.havardp.calculator.parser.*
 
-// https://en.wikipedia.org/wiki/Visitor_pattern implementation
-// https://en.wikipedia.org/wiki/Double_dispatch#Visitor_pattern
-// TODO: Add type checker visitor? like check which visitor to use, arithmetic, variable etc..
-// TODO: Add rewrite visitor, node transformation
-
+/**
+ * Parent of all other visitors, implementation of visitor pattern and double dispatch
+ *      https://en.wikipedia.org/wiki/Visitor_pattern
+ *      https://en.wikipedia.org/wiki/Double_dispatch#Visitor_pattern
+ */
 abstract class NodeVisitor {
     abstract fun visit(node: BinaryOperatorNode): Any
     abstract fun visit(node: UnaryOperatorNode): Any

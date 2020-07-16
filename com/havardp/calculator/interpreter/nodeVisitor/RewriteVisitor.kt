@@ -10,19 +10,19 @@ import kotlin.math.*
 
 /**
  * Rewrites the abstract syntax tree, returns when it has done a single change, so that we can have a step by step solve
- *
  * Uses post order traversal, so it will visit child notes (left first), before it tries to rewrite the current node
- *
- * The tree is represented as an abstract syntax tree, and all rewriting rules are visually explained with comments
+ * all rewriting rules are visually explained with comments
  *
  * This class is not DRY, i preferred ease of understanding.
  *
+ * @property finished set to true whenever a rewrite has been done, and when it's true we don't do more rewrites
+ * @property explanationSteps Stack of string explanations for every rewrite that has been done
+ * @property CONTEXT used when handling big decimals, how many decimals to care about
  */
 class RewriteVisitor: NodeVisitor() {
     var finished = false
     val explanationSteps = Stack<String>()
-    private val PRECISION = 10
-    private val CONTEXT = MathContext(PRECISION, RoundingMode.HALF_UP)
+    private val CONTEXT = MathContext(10, RoundingMode.HALF_UP)
 
     init {
         explanationSteps.push("Original Equation")
@@ -91,11 +91,13 @@ class RewriteVisitor: NodeVisitor() {
     /** Visitor function for imaginary nodes, returns the node*/
     override fun visit(node: ImaginaryNode): AbstractSyntaxTree = node
 
+    /** Middle man function, pushes explanation to stack before returning the node */
     private fun setExplanationAndReturnNode(explanation: String, node: AbstractSyntaxTree): AbstractSyntaxTree{
         explanationSteps.push(explanation)
         return node
     }
 
+    /** Pretty prints an abstract syntax tree, used in some explanations */
     private fun prettyPrint(node: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor()
         return "\\(${node.accept(visitor)}\\)"

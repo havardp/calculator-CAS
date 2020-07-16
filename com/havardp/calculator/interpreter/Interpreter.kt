@@ -8,6 +8,13 @@ import com.havardp.exception.*
 import java.math.BigDecimal
 import java.util.*
 
+/**
+ * Interprets the abstract syntax tree from the parser
+ * Main method is interpret(), which handles rewriting and returns a Result object.
+ *
+ * @property currentTree starts as the input from the user and ends up as the final rewritten tree
+ * @property rewrittenTree either equal to currentTree or a rewrite ahead
+ */
 class Interpreter(parser: Parser) {
     private var currentTree = parser.parse()
     private var rewrittenTree = currentTree
@@ -25,18 +32,20 @@ class Interpreter(parser: Parser) {
         return ast.accept(visitor)
     }
 
+    /** Pretty prints to latex format */
     private fun prettyPrint(ast: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor()
         return "\\(${ast.accept(visitor)}\\)"
     }
 
-    // returns the result object from rewrite, or if it is a quadratic equation, the result object quadratic
+    /** Calls rewrite() to get the ordinaryResult object, and either returns it, or if it is a quadratic equation, returns a quadraticResult object */
     fun interpret(): Result {
         val result: OrdinaryResult = rewrite()
         val quadraticResult = isQuadraticEquation(rewriteToQuadratic(currentTree))
         return quadraticResult ?: result
     }
 
+    /** Handles all rewritings and returns a ordinaryResult object */
     private fun rewrite(): OrdinaryResult {
         /** the visitor instance that lets us rewrite the tree */
         val rewriteVisitor = RewriteVisitor()
@@ -49,17 +58,21 @@ class Interpreter(parser: Parser) {
 
         /** Stops when rewritten and current tree are identical, when rewrite visitor couldn't do more changes */
         do {
+
+            if(counter != 0 && prettyPrint(currentTree) == prettyPrint(rewrittenTree))
+                /** Remove the redundant explanationStep */
+                rewriteVisitor.explanationSteps.pop()
+            else
+                /** add the change to the solution */
+                solveSteps.push(prettyPrint(rewrittenTree))
+
             currentTree = rewrittenTree
-
-            /** add the change to the solution */
-            solveSteps.push(prettyPrint(currentTree))
-
             /** Do a rewrite */
             rewriteVisitor.finished = false
             try {
                 rewrittenTree = currentTree.accept(rewriteVisitor)
             } catch (e: ArithmeticErrorException){
-                println(e.message)
+                println(e.message) // TODO error variable in ordinaryResult
                 break
             } catch (e: InvalidSyntaxException){
                 println(e.message)
@@ -75,7 +88,7 @@ class Interpreter(parser: Parser) {
         } while(!rewrittenTree.equals(currentTree))
 
         val explanationSteps = rewriteVisitor.explanationSteps
-     
+
         if(solveSteps.size != explanationSteps.size)
             throw InterpreterErrorException("The size of the explanations and rewrites differs")
 
@@ -146,7 +159,7 @@ class Interpreter(parser: Parser) {
 
     /**
      * rewrites to an expected form, for example after rewrite() has been called, it is probably on the form ax^2+bx=c, but we want ax^2+bx-c=0
-     * Also if b node is written before a node for example, we move them
+     * Also if "b" node is written before "a" node for example, we switch them
      */
     private fun rewriteToQuadratic(node: AbstractSyntaxTree): AbstractSyntaxTree {
         /** calls the isQuadraticEquation with a small rewrite that just makes sure the tree is in the expected form */
@@ -179,6 +192,7 @@ class Interpreter(parser: Parser) {
         return node
     }
 
+    /** Returns quadraticResult object corresponding to the input */
     private fun solveQuadraticEquation(a: String, b: String, c: String, tree: AbstractSyntaxTree): QuadraticResult {
         val input = prettyPrint(tree)
         val quadraticFormula = "\\frac{-$b \\pm \\sqrt{$b^2 - 4 \\cdot $a \\cdot $c}}{2 \\cdot $a}"

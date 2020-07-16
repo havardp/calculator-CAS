@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import org.junit.Test
 
 class Test {
+    /** Used on non quadratic equations */
     private fun evaluate(str: String): String{
         val lexer = Lexer(str)
         val parser = Parser(lexer)
@@ -21,6 +22,7 @@ class Test {
         throw ArithmeticErrorException("Used evaluate function when should've used evaluate root function")
     }
 
+    /** Returns first root */
     private fun evaluateFirstRoot(str: String): String{
         val lexer = Lexer(str)
         val parser = Parser(lexer)
@@ -32,6 +34,7 @@ class Test {
         throw ArithmeticErrorException("Used evaluate function when should've used evaluate root function")
     }
 
+    /** returns second root */
     private fun evaluateSecondRoot(str: String): String{
         val lexer = Lexer(str)
         val parser = Parser(lexer)
