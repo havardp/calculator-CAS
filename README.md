@@ -33,7 +33,7 @@ The job of the interpreter is then to manipulate Abstract Syntax Tree. It does s
 called [Double Dispatch](https://en.wikipedia.org/wiki/Double_dispatch). The RewriteVisitor is responsible for
 manipulating the tree and doing all the calculations or changes that can be done on an equation. The RewriteVisitor
 Does a [Post Order Traversal](https://www.techiedelight.com/postorder-tree-traversal-iterative-recursive/), Which means we
-try to do changes from the bottom up. A change or transformation of the tree can be evaluating two operands in a binary operator, 
+try to do changes from the bottom up. A change or transformation of the tree can for example be evaluating two operands in a binary operator, 
 or distributing out a variable, for example `2x+xsin(x) -> x(2+sin(x))`. For every change we do, we store the rewritten
 equation and the explanation, both in latex format (handled by a pretty print latex node visitor). In the interpreter there 
 are also checks for quadratic equations, and depending on if it is one or not, the interpreter returns either a 
