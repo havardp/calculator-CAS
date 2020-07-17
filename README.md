@@ -89,7 +89,7 @@ Below are some example of user input, and the corresponding result
 |2x-2=6|x=4|
 |2+(2+x)+2x+2sin(x)+-3x*3*x/x+3x-(3x+2)+sin(x)|2 - 6 \cdot x + 3 \cdot sin(x)|
 |x^2+2x+1=0|x=-1|
-|x^2-2x+1=0|<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">|
+|x^2-2x+1=0|<img src="https://render.githubusercontent.com/render/math?math=\frac{2 \pm 2.8284271247461903 \cdot i}{2}">|
 
 
 ## License
