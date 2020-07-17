@@ -72,18 +72,15 @@ class Interpreter(parser: Parser) {
             try {
                 rewrittenTree = currentTree.accept(rewriteVisitor)
             } catch (e: ArithmeticErrorException){
-                println(e.message) // TODO error variable in ordinaryResult
-                break
-            } catch (e: InvalidSyntaxException){
-                println(e.message)
-                break
+                val explanationSteps = rewriteVisitor.explanationSteps
+                return OrdinaryResult(input, "No Result", solveSteps, explanationSteps, e.message)
             }
 
             /** prevents crash if there's somehow a non terminating loop in the rewrite visitor */
             counter++
             if(counter > 1000) {
-                println("counter greater than 80, loop in code rewrite visitor probably")
-                break
+                val explanationSteps = rewriteVisitor.explanationSteps
+                return OrdinaryResult(input, "No Result", solveSteps, explanationSteps, "Unfortunately i got stuck in a loop, and couldn't solve this equation :(")
             }
         } while(!rewrittenTree.equals(currentTree))
 
