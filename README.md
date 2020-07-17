@@ -40,7 +40,7 @@ are also checks for quadratic equations, and depending on if it is one or not, t
 quadratic equation result object, or an ordinary result object (See under how they are structured).
 
 Do note that this is nowhere near as complex as an actual Computer Algebra System, but it can handle a surprising
-amount of equations, see examples [below](#Examples), or view the [Test.kt file](com/havardp/test/Test.kt).
+amount of equations, see [below](#Examples), or view the [test file](com/havardp/test/Test.kt) for some examples.
 
 
 ## Usage
@@ -80,6 +80,17 @@ or QuadraticResult
 ```
 
 ## Examples
+Below are some example of user input, and the corresponding result
+
+|Input   	|Result|
+|---	|---	|
+|sin(pi/2)  	|0  	|
+|2^4 |16 |
+|2x-2=6|x=4|
+|2+(2+x)+2x+2sin(x)+-3x*3*x/x+3x-(3x+2)+sin(x)|2 - 6 \cdot x + 3 \cdot sin(x)|
+|x^2+2x+1=0|x=-1|
+|x^2-2x+1=0|<img src="https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1">|
+
 
 ## License
 Calculator-CAS is available under the MIT license. See the [LICENSE](LICENSE) file for more info.
