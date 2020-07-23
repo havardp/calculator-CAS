@@ -4,7 +4,6 @@ import com.havardp.calculator.lexer.token.*
 import com.havardp.calculator.parser.*
 import java.lang.ArithmeticException
 import java.math.RoundingMode
-import java.util.*
 
 /** THIS FILE IS ONLY FOR DEBUGGING AND SHOULD NOT BE USED WHATSOEVER IN PRODUCTION */
 

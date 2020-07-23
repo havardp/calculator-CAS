@@ -17,8 +17,8 @@ import java.util.Stack
  */
 class Parser(private val lexer: Lexer){
     private var currentToken : Token = lexer.getNextToken()
-    private val nodeStack: Stack<AbstractSyntaxTree> = Stack<AbstractSyntaxTree>()
-    private val operatorStack: Stack<Token> = Stack<Token>()
+    private val nodeStack: Stack<AbstractSyntaxTree> = Stack()
+    private val operatorStack: Stack<Token> = Stack()
 
     /**
      *  the public method of the class

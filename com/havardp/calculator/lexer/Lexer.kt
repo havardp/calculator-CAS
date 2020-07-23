@@ -2,7 +2,6 @@ package com.havardp.calculator.lexer
 
 import com.havardp.exception.InvalidSyntaxException
 import com.havardp.calculator.lexer.token.*
-import com.havardp.calculator.parser.VariableNode
 
 /**
  * A lexer which should be used by the parser to get tokens from a string

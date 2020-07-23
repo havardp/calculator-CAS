@@ -141,7 +141,7 @@ class RewriteVisitor: NodeVisitor() {
                      *   exp2 exp3       ->      exp1  exp3
                      */
                     if(!left.right.containsVariable())
-                        return return setExplanationAndReturnNode(
+                        return setExplanationAndReturnNode(
                                 "Subtract ${prettyPrint(left.right)} from both sides",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                         )
