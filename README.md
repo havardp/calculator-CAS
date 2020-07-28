@@ -79,6 +79,9 @@ or QuadraticResult
 }
 ```
 
+Note that when displaying for example `result.input` in a latex formatter, you need to add which math mode to use
+, so for example the string `"\$\$ ${result.input} \$\$"` would be one (or any other latex math mode).
+
 ## Examples
 Below are some example of user input, and the corresponding latex result
 
