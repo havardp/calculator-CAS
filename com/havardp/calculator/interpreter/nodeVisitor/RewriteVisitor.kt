@@ -25,7 +25,7 @@ class RewriteVisitor: NodeVisitor() {
     private val CONTEXT = MathContext(10, RoundingMode.HALF_UP)
 
     init {
-        explanationSteps.push("Original Equation")
+        explanationSteps.push("\\text{Original Equation}")
     }
 
     /** Visitor function for binary operators */
@@ -100,7 +100,7 @@ class RewriteVisitor: NodeVisitor() {
     /** Pretty prints an abstract syntax tree, used in some explanations */
     private fun prettyPrint(node: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor()
-        return "\\(${node.accept(visitor)}\\)"
+        return node.accept(visitor)
     }
 
     private fun rewriteEqual(token: Equal, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
@@ -113,7 +113,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right.containsVariable() && !left.containsVariable())
             return setExplanationAndReturnNode(
-                    "Reverse the equality in order to isolate \\(x\\) to the left hand side",
+                    "\\text{Reverse the equality in order to isolate } x \\text{ to the left hand side}",
                     BinaryOperatorNode(Equal(), right, left)
             )
 
@@ -130,7 +130,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(left.left)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(left.left)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Minus(), right, left.left))
                         )
 
@@ -142,7 +142,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(left.right)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(left.right)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                         )
                 }
@@ -157,7 +157,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(left.left)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(left.left)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), UnaryOperatorNode(UnaryMinus(), left.right), BinaryOperatorNode(Minus(), right, left.left))
                         )
                     /**
@@ -168,7 +168,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Add ${prettyPrint(left.right)} to both sides",
+                                "\\text{Add } ${prettyPrint(left.right)} \\text{ to both sides}",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Plus(), right, left.right))
                         )
                 }
@@ -182,7 +182,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Divide both sides by ${prettyPrint(left.left)}",
+                                "\\text{Divide both sides by } ${prettyPrint(left.left)}",
                                 BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), right, left.left))
                         )
                     /**
@@ -193,7 +193,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Divide both sides by ${prettyPrint(left.right)}",
+                                "\\text{Divide both sides by } ${prettyPrint(left.right)}",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Divide(), right, left.right))
                         )
                 }
@@ -209,7 +209,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Take the reciprocal of both sides, and then multiply both sides by ${prettyPrint(left.left)}",
+                                "\\text{Take the reciprocal of both sides, and then multiply both sides by } ${prettyPrint(left.left)}",
                                 BinaryOperatorNode(Equal(), left.right, BinaryOperatorNode(Divide(), left.left, right))
                         )
 
@@ -221,7 +221,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(!left.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Multiply both sides by ${prettyPrint(left.right)}",
+                                "\\text{Multiply both sides by } ${prettyPrint(left.right)}",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Multiplication(), right, left.right))
                         )
                 }
@@ -235,7 +235,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(left.right is OperandNode && !right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Take the inverse power of ${prettyPrint(left.right)} on both sides",
+                                "\\text{Take the inverse power of } ${prettyPrint(left.right)} \\text{ on both sides}",
                                 BinaryOperatorNode(Equal(), left.left, BinaryOperatorNode(Power(), right, BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), left.right)))
                         )
                 }
@@ -253,7 +253,7 @@ class RewriteVisitor: NodeVisitor() {
                          */
                         if(left.left.left is OperandNode)
                             return setExplanationAndReturnNode(
-                                    "Subtract ${prettyPrint(left.left.left)} from both sides",
+                                    "\\text{Subtract } ${prettyPrint(left.left.left)} \\text{ from both sides}",
                                     BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.right, left.right), BinaryOperatorNode(Minus(), right, left.left.left))
                             )
 
@@ -266,7 +266,7 @@ class RewriteVisitor: NodeVisitor() {
                          */
                         if(left.left.right is OperandNode)
                             return setExplanationAndReturnNode(
-                                    "Subtract ${prettyPrint(left.left.right)} from both sides",
+                                    "\\text{Subtract } ${prettyPrint(left.left.right)} \\text{ from both sides}",
                                     BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Minus(), right, left.left.right))
                             )
                     }
@@ -281,7 +281,7 @@ class RewriteVisitor: NodeVisitor() {
                          */
                         if(left.left.left is OperandNode)
                             return setExplanationAndReturnNode(
-                                    "Subtract ${prettyPrint(left.left.left)} from both sides",
+                                    "\\text{Subtract } ${prettyPrint(left.left.left)} \\text{ from both sides}",
                                     BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, UnaryOperatorNode(UnaryMinus(), left.left.right), left.right), BinaryOperatorNode(Minus(), right, left.left.left))
                             )
                         /**
@@ -293,7 +293,7 @@ class RewriteVisitor: NodeVisitor() {
                          */
                         if(left.left.right is OperandNode)
                             return setExplanationAndReturnNode(
-                                    "add ${prettyPrint(left.left.right)} to both sides",
+                                    "\\text{add } ${prettyPrint(left.left.right)} \\text{ to both sides}",
                                     BinaryOperatorNode(Equal(), BinaryOperatorNode(left.token, left.left.left, left.right), BinaryOperatorNode(Plus(), right, left.left.right))
                             )
                     }
@@ -302,7 +302,7 @@ class RewriteVisitor: NodeVisitor() {
 
             if(left is UnaryOperatorNode && !right.containsVariable()){
                 return setExplanationAndReturnNode(
-                        "Take the inverse of \\(${left.token.value}\\) on both sides",
+                        "\\text{Take the inverse of } ${left.token.value} \\text{ on both sides}",
                         when(left.token){
                             is UnaryMinus -> BinaryOperatorNode(Equal(), left.middle, UnaryOperatorNode(Minus(), right))
                             is UnaryPlus -> BinaryOperatorNode(Equal(), left.middle, right)
@@ -331,7 +331,7 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if(right.left.containsVariable() && right.right.containsVariable())
                     return setExplanationAndReturnNode(
-                            "Subtract ${prettyPrint(right)} from both sides",
+                            "\\text{Subtract } ${prettyPrint(right)} \\text{ from both sides}",
                             BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
                     )
 
@@ -345,7 +345,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "subtract ${prettyPrint(right.left)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(right.left)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), right.right)
                         )
 
@@ -357,7 +357,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(right.right)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(right.right)} \\text{from both sides}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.right), right.left)
                         )
                 }
@@ -372,7 +372,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(right.left)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(right.left)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right.left), UnaryOperatorNode(UnaryMinus(), right.right))
                         )
 
@@ -384,7 +384,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Add ${prettyPrint(right.right)} to both sides",
+                                "\\text{Add } ${prettyPrint(right.right)} \\text{ to both sides}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                         )
                 }
@@ -398,7 +398,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Divide both sides by ${prettyPrint(right.left)}",
+                                "\\text{Divide both sides by } ${prettyPrint(right.left)}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.left), right.right)
                         )
 
@@ -410,7 +410,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Divide both sides by ${prettyPrint(right.right)}",
+                                "\\text{Divide both sides by }${prettyPrint(right.right)}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), left, right.right), right.left)
                         )
                 }
@@ -424,7 +424,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.left.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Divide both sides by ${prettyPrint(right.left)}",
+                                "\\text{Divide both sides by } ${prettyPrint(right.left)}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Divide(), right.left, left), BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right))
                         )
 
@@ -436,7 +436,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if(right.right.containsVariable())
                         return setExplanationAndReturnNode(
-                                "Multiply both sides by ${prettyPrint(right.right)}",
+                                "\\text{Multiply both sides by } ${prettyPrint(right.right)}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Multiplication(), left, right.right), right.left)
                         )
                 }
@@ -451,7 +451,7 @@ class RewriteVisitor: NodeVisitor() {
                  */
                 if(right.token is Power)
                         return setExplanationAndReturnNode(
-                                "Subtract ${prettyPrint(right)} from both sides",
+                                "\\text{Subtract } ${prettyPrint(right)} \\text{ from both sides}",
                                 BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
                         )
 
@@ -466,7 +466,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if(right is UnaryOperatorNode)
                 return setExplanationAndReturnNode(
-                        "Subtract ${prettyPrint(right)} from both sides",
+                        "\\text{Subtract } ${prettyPrint(right)} \\text{ from both sides}",
                         BinaryOperatorNode(Equal(), BinaryOperatorNode(Minus(), left, right), OperandNode(OperandToken("0")))
                 )
         }
@@ -488,7 +488,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if (right.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Remove redundant plus zero",
+                    "\\text{Remove redundant plus zero}",
                     left
             )
 
@@ -499,7 +499,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Remove redundant plus zero",
+                    "\\text{Remove redundant plus zero}",
                     right
             )
 
@@ -510,7 +510,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left !is OperandNode && left.equals(right))
             return setExplanationAndReturnNode(
-                    "Distribution: ${prettyPrint(right)}\\(+\\)${prettyPrint(right)}\\(=2 \\cdot \\)${prettyPrint(left)}",
+                    "\\text{Distribution: } ${prettyPrint(right)} + ${prettyPrint(right)} = 2 \\cdot ${prettyPrint(left)}",
                     BinaryOperatorNode(Multiplication(), OperandNode(OperandToken("2")), left)
             )
 
@@ -522,7 +522,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is UnaryOperatorNode && right.token is UnaryMinus && right.middle !is UnaryOperatorNode)
             return setExplanationAndReturnNode(
-                    "Remove redundant plus operator: \\(+-=-\\)",
+                    "\\text{Remove redundant plus operator: } +- \\text{ to } -)",
                     BinaryOperatorNode(Minus(), left, right.middle)
             )
 
@@ -534,7 +534,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is UnaryOperatorNode && left.token is UnaryMinus && left.middle.equals(right))
             return setExplanationAndReturnNode(
-                    "Adding anything with it's inverse gives 0",
+                    "\\text{Adding anything with it's inverse gives 0}",
                     OperandNode(OperandToken("0"))
             )
 
@@ -547,7 +547,7 @@ class RewriteVisitor: NodeVisitor() {
         if(right is BinaryOperatorNode && right.token is Multiplication
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
             return setExplanationAndReturnNode(
-                    "Remove redundant plus operator: \\(+-=-\\)",
+                    "\\text{Remove redundant plus operator: } +- \\text{ to } -)",
                     BinaryOperatorNode(Minus(), left, BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), right.left), right.right))
             )
 
@@ -559,7 +559,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Divide && right is BinaryOperatorNode && right.token is Divide && left.right.equals(right.right))
             return setExplanationAndReturnNode(
-                    "Move numerators to a common fraction since the denominator is equivalent",
+                    "\\text{Move numerators to a common fraction since the denominator is equivalent}",
                     BinaryOperatorNode(Divide(), BinaryOperatorNode(Plus(), left.left, right.left), left.right)
             )
 
@@ -577,7 +577,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(token, BinaryOperatorNode(token, left.right, right), left.left)
                     )
 
@@ -591,7 +591,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(token, BinaryOperatorNode(token, left.left, right), left.right)
                     )
 
@@ -612,7 +612,7 @@ class RewriteVisitor: NodeVisitor() {
                                     || left.left.right.equals(left.right.left)
                                     || left.left.right.equals(left.right.right))))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                     )
 
@@ -626,7 +626,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(left.left)} right",
+                                "\\text{Move } ${prettyPrint(left.left)} \\text{ right}",
                                 BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Plus(), left.left, right))
                         )
 
@@ -638,7 +638,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "No explanation (does not occur change in output)",
+                                "\\text{No explanation (does not occur change in output)}",
                                 BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                         )
                 }
@@ -661,7 +661,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                     )
 
@@ -677,7 +677,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(token, left.left, BinaryOperatorNode(left.token, right, left.right))
                     )
 
@@ -690,7 +690,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(left.token, BinaryOperatorNode(token, left.left, right), left.right)
                     )
 
@@ -711,7 +711,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                     )
 
@@ -725,7 +725,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(right)} left",
+                                "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                                 BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
                         )
 
@@ -737,7 +737,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(right)} left",
+                                "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                                 BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                         )
                 }
@@ -760,7 +760,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                     )
             }
@@ -779,7 +779,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(token, right.left, BinaryOperatorNode(token, right.right, left))
                     )
 
@@ -793,7 +793,7 @@ class RewriteVisitor: NodeVisitor() {
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(token, BinaryOperatorNode(token, left, right.left), right.right)
                     )
 
@@ -814,7 +814,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
                     )
 
@@ -828,7 +828,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "No explanation (does not occur change in output)",
+                                "\\text{No explanation (does not occur change in output)}",
                                 BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left, right.left), right.right)
                         )
 
@@ -840,7 +840,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(right.right)} left",
+                                "\\text{Move } ${prettyPrint(right.right)} \\text{ left}",
                                 BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                         )
                 }
@@ -863,7 +863,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
                     )
             }
@@ -879,7 +879,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
                     )
 
@@ -893,7 +893,7 @@ class RewriteVisitor: NodeVisitor() {
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.left), right.right)
                     )
 
@@ -914,7 +914,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
                     )
 
@@ -928,7 +928,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "No explanation (does not occur change in output)",
+                                "\\text{No explanation (does not occur change in output)}",
                                 BinaryOperatorNode(Minus(),  BinaryOperatorNode(Plus(), left, right.left), right.right)
                         )
 
@@ -940,7 +940,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(right.right)} left",
+                                "\\text{Move } ${prettyPrint(right.right)} \\text{ left}",
                                 BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
                         )
                 }
@@ -963,7 +963,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left)} right",
+                            "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Minus(), left, right.right))
                     )
             }
@@ -978,25 +978,25 @@ class RewriteVisitor: NodeVisitor() {
             if(left.token is Multiplication && right.token is Multiplication){
                 if(left.left.equals(right.left))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.left)}",
+                            "\\text{Distribute out } ${prettyPrint(left.left)}",
                             BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.right))
                     )
 
                 if(left.left.equals(right.right))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.left)}",
+                            "\\text{Distribute out } ${prettyPrint(left.left)}",
                             BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Plus(), left.right, right.left))
                     )
 
                 if(left.right.equals(right.left))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.right)}",
+                            "\\text{Distribute out } ${prettyPrint(left.right)}",
                             BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.right))
                     )
 
                 if(left.right.equals(right.right))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.right)}",
+                            "\\text{Distribute out } ${prettyPrint(left.right)}",
                             BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Plus(), left.left, right.left))
                     )
             }
@@ -1010,7 +1010,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (left.right.equals(right))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(right)}",
+                        "\\text{Distribute out } ${prettyPrint(right)}",
                         BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.left, OperandNode(OperandToken("1"))))
                 )
 
@@ -1021,7 +1021,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (left.left.equals(right))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(left.right)}",
+                        "\\text{Distribute out } ${prettyPrint(left.right)}",
                         BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Plus(), left.right, OperandNode(OperandToken("1"))))
                 )
         }
@@ -1035,7 +1035,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (right.right.equals(left))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(left)}",
+                        "\\text{Distribute out } ${prettyPrint(left)}",
                         BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.left, OperandNode(OperandToken("1"))))
                 )
 
@@ -1046,7 +1046,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (right.left.equals(left))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(left)}",
+                        "\\text{Distribute out } ${prettyPrint(left)}",
                         BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), right.right, OperandNode(OperandToken("1"))))
                 )
         }
@@ -1059,7 +1059,7 @@ class RewriteVisitor: NodeVisitor() {
         if((left.token is Multiplication || left.token is Divide || left is UnaryOperatorNode && (left.token !is UnaryMinus || left.middle is UnaryOperatorNode))
                 && !(right.token is Multiplication || right.token is Divide || right is UnaryOperatorNode && (right.token !is UnaryMinus || right.middle is UnaryOperatorNode)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move  }${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Plus(), right, left)
             )
 
@@ -1072,7 +1072,7 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication && left.right is UnaryOperatorNode
                 && right is BinaryOperatorNode && right.token is Multiplication && right.right !is UnaryOperatorNode && right.left !is UnaryOperatorNode)
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Plus(), right, left)
             )
 
@@ -1091,7 +1091,7 @@ class RewriteVisitor: NodeVisitor() {
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
                     )
 
@@ -1111,7 +1111,7 @@ class RewriteVisitor: NodeVisitor() {
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} Left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ Left}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
                     )
 
@@ -1127,7 +1127,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "No explanation (does not occur change in output)",
+                        "\\text{No explanation (does not occur change in output)}",
                         BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                 )
 
@@ -1142,7 +1142,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Move ${prettyPrint(left.left)} right",
+                        "\\text{Move } ${prettyPrint(left.left)} \\text{ right}",
                         BinaryOperatorNode(Plus(), BinaryOperatorNode(Plus(), right, left.left), left.right)
                 )
         }
@@ -1159,7 +1159,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Move ${prettyPrint(left.right)} right",
+                        "\\text{Move } ${prettyPrint(left.right)} \\text{ right}",
                         BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), right, left.right))
                 )
 
@@ -1174,7 +1174,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Move ${prettyPrint(right)} left",
+                        "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                         BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left.left, right), left.right)
                 )
         }
@@ -1193,7 +1193,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if (right.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Remove redundant minus zero",
+                    "\\text{Remove redundant minus zero}",
                     left
             )
 
@@ -1205,11 +1205,11 @@ class RewriteVisitor: NodeVisitor() {
         if(left.token.value == "0") {
             if(right.token is OperandToken)
                 return setExplanationAndReturnNode(
-                        "Remove redundant zero",
+                        "\\text{Remove redundant zero}",
                         UnaryOperatorNode(UnaryMinus(), right)
                 )
             return setExplanationAndReturnNode(
-                    "Remove redundant zero",
+                    "\\text{Remove redundant zero}",
                     UnaryOperatorNode(UnaryMinus() ,right)
             )
         }
@@ -1221,7 +1221,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.equals(right))
             return setExplanationAndReturnNode(
-                    "Subtracting anything with itself gives 0",
+                    "\\text{Subtracting anything with itself gives } 0",
                     OperandNode(OperandToken("0"))
             )
 
@@ -1233,7 +1233,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is UnaryOperatorNode && right.token is UnaryMinus && left !is UnaryOperatorNode)
             return setExplanationAndReturnNode(
-                    "Change double minus to plus",
+                    "\\text{Change double minus to plus}",
                     BinaryOperatorNode(Plus(), left, right.middle)
             )
 
@@ -1246,7 +1246,7 @@ class RewriteVisitor: NodeVisitor() {
         if(right is BinaryOperatorNode && right.token is Multiplication
                 && right.left is OperandNode && right.left.token is OperandToken && right.left.token.value.toBigDecimal() < 0.toBigDecimal())
             return setExplanationAndReturnNode(
-                    "Change double minus to plus",
+                    "\\text{Change double minus to plus}",
                     BinaryOperatorNode(Plus(), left, BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), right.left), right.right))
             )
 
@@ -1258,7 +1258,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Divide && right is BinaryOperatorNode && right.token is Divide && left.right.equals(right.right))
             return setExplanationAndReturnNode(
-                    "Move numerators to a common fraction since the denominator is equivalent",
+                    "\\text{Move numerators to a common fraction since the denominator is equivalent}",
                     BinaryOperatorNode(Divide(), BinaryOperatorNode(Minus(), left.left, right.left), left.right)
             )
 
@@ -1276,7 +1276,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                     )
 
@@ -1290,7 +1290,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(left.left)} right",
+                            "\\text{Move } ${prettyPrint(left.left)} \\text{ right}",
                             BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right))
                     )
 
@@ -1311,7 +1311,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                     )
 
@@ -1325,7 +1325,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if ((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(left.left)} right",
+                                "\\text{Move } ${prettyPrint(left.left)} \\text{ right}",
                                 BinaryOperatorNode(Plus(), left.right, BinaryOperatorNode(Minus(), left.left, right) )
                         )
 
@@ -1337,7 +1337,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "No explanation (does not occur change in output)",
+                                "\\text{No explanation (does not occur change in output)}",
                                 BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                         )
                 }
@@ -1360,7 +1360,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
                     return setExplanationAndReturnNode(
-                            "No explanation (does not occur change in output)",
+                            "\\text{No explanation (does not occur change in output)}",
                             BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                     )
             }
@@ -1375,7 +1375,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (right.equals(left.right) && !right.equals(left.left)))
                     return setExplanationAndReturnNode(
-                            "Distribute minus out of parenthesis",
+                            "\\text{Distribute minus out of parenthesis}",
                             BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                     )
 
@@ -1388,7 +1388,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                         || (right.equals(left.left) && !right.equals(left.right)))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
                     )
 
@@ -1409,7 +1409,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.left)
                                 || left.left.right.equals(left.right.right))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus out of parenthesis",
+                            "\\text{Distribute minus out of parenthesis}",
                             BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                     )
 
@@ -1423,7 +1423,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.left.equals(right.right) || left.left.equals(right.left)) && left.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Move ${prettyPrint(right)} left",
+                                "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                                 BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
                         )
 
@@ -1435,7 +1435,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((left.right.equals(right.right) || left.right.equals(right.left)) && left.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Distribute minus out of parenthesis",
+                                "\\text{Distribute minus out of parenthesis}",
                                 BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
                         )
                 }
@@ -1459,7 +1459,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || left.left.right.equals(left.right.right)
                                 || left.left.right.equals(left.right.left))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus out of parenthesis",
+                            "\\text{Distribute minus out of parenthesis}",
                             BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), right, left.right))
                     )
             }
@@ -1478,7 +1478,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
                     )
 
@@ -1492,7 +1492,7 @@ class RewriteVisitor: NodeVisitor() {
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
                     return setExplanationAndReturnNode(
-                            "Distribute minus out of parenthesis",
+                            "\\text{Distribute minus out of parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
                     )
 
@@ -1513,7 +1513,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
                     )
 
@@ -1527,7 +1527,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Distribute minus into parenthesis",
+                                "\\text{Distribute minus into parenthesis}",
                                 BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
                         )
 
@@ -1539,7 +1539,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Distribute minus into parenthesis",
+                                "\\text{Distribute minus into parenthesis}",
                                 BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left, right.right), right.left)
                         )
                 }
@@ -1562,7 +1562,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Plus(), right.left, BinaryOperatorNode(Plus(), left, right.right))
                     )
             }
@@ -1577,7 +1577,7 @@ class RewriteVisitor: NodeVisitor() {
                 if((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (left.equals(right.right) && !left.equals(right.left)))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                     )
 
@@ -1591,7 +1591,7 @@ class RewriteVisitor: NodeVisitor() {
                 else if((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right)))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left, right.left), right.right)
                     )
 
@@ -1612,7 +1612,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.left)
                                 || right.left.right.equals(right.right.right))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                     )
 
@@ -1626,7 +1626,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.left.equals(left.right) || right.left.equals(left.left)) && right.left !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Distribute minus into parenthesis",
+                                "\\text{Distribute minus into parenthesis}",
                                 BinaryOperatorNode(Plus(),  BinaryOperatorNode(Minus(), left, right.left), right.right)
                         )
 
@@ -1638,7 +1638,7 @@ class RewriteVisitor: NodeVisitor() {
                      */
                     if((right.right.equals(left.right) || right.right.equals(left.left)) && right.right !is OperandNode)
                         return setExplanationAndReturnNode(
-                                "Distribute minus into parenthesis",
+                                "\\text{Distribute minus into parenthesis}",
                                 BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                         )
                 }
@@ -1661,7 +1661,7 @@ class RewriteVisitor: NodeVisitor() {
                                 || right.left.right.equals(right.right.right)
                                 || right.left.right.equals(right.right.left))))
                     return setExplanationAndReturnNode(
-                            "Distribute minus into parenthesis",
+                            "\\text{Distribute minus into parenthesis}",
                             BinaryOperatorNode(Minus(), BinaryOperatorNode(Plus(), left, right.right), right.left)
                     )
             }
@@ -1676,25 +1676,25 @@ class RewriteVisitor: NodeVisitor() {
             if(left.token is Multiplication && right.token is Multiplication){
                 if(left.left.equals(right.left))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.left)}",
+                            "\\text{Distribute out } ${prettyPrint(left.left)}",
                             BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
                     )
 
                 if(left.left.equals(right.right))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.left)}",
+                            "\\text{Distribute out } ${prettyPrint(left.left)}",
                             BinaryOperatorNode(Multiplication(), left.left, BinaryOperatorNode(Minus(), left.right, right.left))
                     )
 
                 if(left.right.equals(right.left))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.right)}",
+                            "\\text{Distribute out } ${prettyPrint(left.right)}",
                             BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.right))
                     )
 
                 if(left.right.equals(right.right))
                     return setExplanationAndReturnNode(
-                            "Distribute out ${prettyPrint(left.right)}",
+                            "\\text{Distribute out } ${prettyPrint(left.right)}",
                             BinaryOperatorNode(Multiplication(), left.right, BinaryOperatorNode(Minus(), left.left, right.left))
                     )
             }
@@ -1709,7 +1709,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (left.right.equals(right))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(right)}",
+                        "\\text{Distribute out } ${prettyPrint(right)}",
                         BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.left, OperandNode(OperandToken("1"))))
                 )
 
@@ -1720,7 +1720,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (left.left.equals(right))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(right)}",
+                        "\\text{Distribute out } ${prettyPrint(right)}",
                         BinaryOperatorNode(Multiplication(), right, BinaryOperatorNode(Minus(), left.right, OperandNode(OperandToken("1"))))
                 )
         }
@@ -1734,7 +1734,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (right.right.equals(left))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(left)}",
+                        "\\text{Distribute out } ${prettyPrint(left)}",
                         BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Minus(), OperandNode(OperandToken("1")), right.left))
                 )
 
@@ -1745,7 +1745,7 @@ class RewriteVisitor: NodeVisitor() {
              */
             if (right.left.equals(left))
                 return setExplanationAndReturnNode(
-                        "Distribute out ${prettyPrint(left)}",
+                        "\\text{Distribute out } ${prettyPrint(left)}",
                         BinaryOperatorNode(Multiplication(), left, BinaryOperatorNode(Plus(), OperandNode(OperandToken("1")), right.right))
                 )
         }
@@ -1759,7 +1759,7 @@ class RewriteVisitor: NodeVisitor() {
         if((left.token is Multiplication || left.token is Divide || left is UnaryOperatorNode && (left.token !is UnaryMinus || left.middle is UnaryOperatorNode))
                 && !(right.token is Multiplication || right.token is Divide || right is UnaryOperatorNode && (right.token !is UnaryMinus || right.middle is UnaryOperatorNode)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(),right), left)
             )
 
@@ -1773,7 +1773,7 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication && left.right is UnaryOperatorNode
                 && right is BinaryOperatorNode && right.token is Multiplication && right.right !is UnaryOperatorNode && right.left !is UnaryOperatorNode)
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Plus(), UnaryOperatorNode(UnaryMinus(), right), left)
             )
 
@@ -1792,7 +1792,7 @@ class RewriteVisitor: NodeVisitor() {
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(right)} left",
+                    "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                     BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
             )
 
@@ -1811,7 +1811,7 @@ class RewriteVisitor: NodeVisitor() {
                         && (left.right.token is Multiplication && !( left.left is BinaryOperatorNode && left.left.right.equals(left.right.right)))
                         && left.right.right is UnaryOperatorNode)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(right)} left",
+                    "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                     BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
             )
 
@@ -1827,7 +1827,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "No explanation (does not occur change in output)",
+                        "\\text{No explanation (does not occur change in output)}",
                         BinaryOperatorNode(Plus(), left.left, BinaryOperatorNode(Minus(), left.right, right))
                 )
 
@@ -1842,7 +1842,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Move ${prettyPrint(left.right)} right",
+                        "\\text{Move } ${prettyPrint(left.right)} \\text{ right}",
                         BinaryOperatorNode(Plus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
                 )
         }
@@ -1859,7 +1859,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Distribute minus out of parenthesis",
+                        "\\text{Distribute minus out of parenthesis}",
                         BinaryOperatorNode(Minus(), left.left, BinaryOperatorNode(Plus(), left.right, right))
                 )
             /**
@@ -1873,7 +1873,7 @@ class RewriteVisitor: NodeVisitor() {
                     && (right.left is OperandNode && right.right !is OperandNode
                             || right.right is OperandNode && right.left !is OperandNode))
                 return setExplanationAndReturnNode(
-                        "Move ${prettyPrint(right)} left",
+                        "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                         BinaryOperatorNode(Minus(), BinaryOperatorNode(Minus(), left.left, right), left.right)
                 )
         }
@@ -1894,7 +1894,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right is BinaryOperatorNode && right.token is Divide && right.right.equals(left))
             return setExplanationAndReturnNode(
-                    "Factor ${prettyPrint(left)} is in numerator and denominator, and cancels out",
+                    "\\text{Factor } ${prettyPrint(left)} \\text{ is in numerator and denominator, and cancels out}",
                     right.left
             )
 
@@ -1907,7 +1907,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Divide && left.right.equals(right))
             return setExplanationAndReturnNode(
-                    "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                    "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                     left.left
             )
 
@@ -1919,7 +1919,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if (left !is OperandNode && right is OperandNode)
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(right)} before ${prettyPrint(left)}",
+                    "\\text{Move } ${prettyPrint(right)} \\text{ before } ${prettyPrint(left)}",
                     BinaryOperatorNode(token, right, left)
             )
 
@@ -1930,7 +1930,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.token.value == "1")
             return setExplanationAndReturnNode(
-                    "Remove redundant multiply by one",
+                    "\\text{Remove redundant multiply by one}",
                     right
             )
 
@@ -1941,7 +1941,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right.token.value == "1")
             return setExplanationAndReturnNode(
-                    "Remove redundant multiply by one",
+                    "\\text{Remove redundant multiply by one}",
                     left
             )
 
@@ -1952,7 +1952,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.token.value == "0" || right.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Anything times zero is zero",
+                    "\\text{Anything times zero is zero}",
                     OperandNode(OperandToken("0"))
             )
 
@@ -1964,7 +1964,7 @@ class RewriteVisitor: NodeVisitor() {
         if((right !is UnaryOperatorNode || right.token is Minus && right.middle is UnaryOperatorNode)
                 && (left is UnaryOperatorNode && (left.token !is UnaryMinus || left.middle is UnaryOperatorNode)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(right)} before ${prettyPrint(left)}",
+                    "\\text{Move } ${prettyPrint(right)} \\text{ before } ${prettyPrint(left)}",
                     BinaryOperatorNode(Multiplication(), right, left)
             )
 
@@ -1979,7 +1979,7 @@ class RewriteVisitor: NodeVisitor() {
                 && ((right.token is OperandToken && left.left.token is OperandToken && left.right.token !is OperandToken)
                     || (right.equals(left.left) && !right.equals(left.right))))
                     return setExplanationAndReturnNode(
-                            "Move ${prettyPrint(right)} left",
+                            "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                             BinaryOperatorNode(Multiplication(), BinaryOperatorNode(Multiplication(), left.left, right), left.right)
                     )
 
@@ -1994,7 +1994,7 @@ class RewriteVisitor: NodeVisitor() {
                 && ((right.token is OperandToken && left.left.token !is OperandToken && left.right.token is OperandToken)
                         || (!right.equals(left.left) && right.equals(left.right))))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(right)} left",
+                    "\\text{Move } ${prettyPrint(right)} \\text{ left}",
                     BinaryOperatorNode(Multiplication(), BinaryOperatorNode(Multiplication(), left.right, right), left.left)
             )
 
@@ -2009,7 +2009,7 @@ class RewriteVisitor: NodeVisitor() {
                 && ((left.token is OperandToken && right.left.token is OperandToken && right.right.token !is OperandToken)
                         || (left.equals(right.left) && !left.equals(right.right))))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Multiplication(), right.right, BinaryOperatorNode(Multiplication(), right.left, left))
             )
 
@@ -2024,7 +2024,7 @@ class RewriteVisitor: NodeVisitor() {
                 && ((left.token is OperandToken && right.left.token !is OperandToken && right.right.token is OperandToken)
                         || (!left.equals(right.left)) && left.equals(right.right)))
             return setExplanationAndReturnNode(
-                    "Move ${prettyPrint(left)} right",
+                    "\\text{Move } ${prettyPrint(left)} \\text{ right}",
                     BinaryOperatorNode(Multiplication(), right.left, BinaryOperatorNode(Multiplication(), right.right, left))
             )
 
@@ -2037,7 +2037,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Power && right is BinaryOperatorNode && right.token is Power && left.left.equals(right.left))
                 return setExplanationAndReturnNode(
-                        "Product rule: \\(x^n \\cdot x^m = x^{n+m}\\)",
+                        "\\text{Product rule: } x^{n} \\cdot x^{m} = x^{n+m}",
                         BinaryOperatorNode(Power(), left.left, BinaryOperatorNode(Plus(), left.right, right.right))
                 )
 
@@ -2048,9 +2048,14 @@ class RewriteVisitor: NodeVisitor() {
     private fun rewriteDivide(token: Divide, left: AbstractSyntaxTree, right: AbstractSyntaxTree): AbstractSyntaxTree {
         finished = true
 
+        /**
+         *    exp1 and exp2 are equivalent
+         *              /          ->      1
+         *         exp1  exp2      ->
+         */
         if(left.equals(right))
             return setExplanationAndReturnNode(
-                    "Product rule: \\(x^n \\cdot x^m = x^{n+m}\\)",
+                    "${prettyPrint(left)} \\text{ is above and below the fraction, and cancels out}",
                     OperandNode(OperandToken("1"))
             )
 
@@ -2062,7 +2067,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.token.value == "1" && right is BinaryOperatorNode && right.token is Divide && right.left.token.value == "1")
             return setExplanationAndReturnNode(
-                    "Division rule: \\(\\frac{1}{\\frac{1}{x}}=x\\)",
+                    "\\text{Division rule: } \\frac{1}{\\frac{1}{x}}=x",
                     right.right
             )
 
@@ -2073,7 +2078,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Zero divided by anything is zero",
+                    "\\text{Zero divided by anything is zero}",
                     OperandNode(OperandToken("0"))
             )
 
@@ -2086,13 +2091,13 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication){
             if(left.left.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         left.right
                 )
 
             if(left.right.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         left.left
                 )
 
@@ -2112,13 +2117,13 @@ class RewriteVisitor: NodeVisitor() {
         if(right is BinaryOperatorNode && right.token is Multiplication){
             if(right.left.equals(left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.right)
                 )
 
             if(right.right.equals(left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), OperandNode(OperandToken("1")), right.left)
                 )
 
@@ -2138,25 +2143,25 @@ class RewriteVisitor: NodeVisitor() {
         if(right is BinaryOperatorNode && left is BinaryOperatorNode && left.token is Multiplication && right.token is Multiplication){
             if(left.left.equals(right.left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), left.right, right.right)
                 )
 
             if(left.left.equals(right.right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), left.right, right.left)
                 )
 
             if(left.right.equals(right.left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), left.left, right.right)
                 )
 
             if(left.right.equals(right.right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), left.left, right.left)
                 )
 
@@ -2181,13 +2186,13 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication && left.left is BinaryOperatorNode && left.left.token is Multiplication){
             if(left.left.left.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Multiplication(), left.left.right, left.right)
                 )
 
             if(left.left.right.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Multiplication(), left.left.left, left.right)
                 )
 
@@ -2208,13 +2213,13 @@ class RewriteVisitor: NodeVisitor() {
         if(left is BinaryOperatorNode && left.token is Multiplication && left.right is BinaryOperatorNode && left.right.token is Multiplication){
             if(left.right.left.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Multiplication(), left.left, left.right.right)
                 )
 
             if(left.right.right.equals(right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Multiplication(), left.left, left.right.left)
                 )
 
@@ -2238,25 +2243,25 @@ class RewriteVisitor: NodeVisitor() {
 
             if(left.left.left.equals(right.right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left.left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left.left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.left)
                 )
 
             if(left.left.left.equals(right.left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left.left)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left.left)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.right, left.right), right.right)
                 )
 
             if(left.left.right.equals(right.right))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left.right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left.right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.left)
                 )
 
             if(left.left.right.equals(right.left))
                 return setExplanationAndReturnNode(
-                        "Factor ${prettyPrint(left.left.right)} is in numerator and denominator, and cancels out",
+                        "\\text{Factor } ${prettyPrint(left.left.right)} \\text{ is in numerator and denominator, and cancels out}",
                         BinaryOperatorNode(Divide(), BinaryOperatorNode(Multiplication(), left.left.left, left.right), right.right)
                 )
 
@@ -2274,7 +2279,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(left is BinaryOperatorNode && left.token is Power && right is BinaryOperatorNode && right.token is Power && left.left.equals(right.left))
             return setExplanationAndReturnNode(
-                    "Product rule: \\(x^n \\cdot x^m = x^{n+m}\\)",
+                    "\\text{Product rule: } \\frac{x^{n}}{x^{m}} = x^{n-m}\\)",
                     BinaryOperatorNode(Power(), left.left, BinaryOperatorNode(Minus(), left.right, right.right))
             )
 
@@ -2292,7 +2297,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right.token.value == "0")
             return setExplanationAndReturnNode(
-                    "Zero rule: \\(x^0 = 1\\)",
+                    "\\text{Zero rule:} x^0 = 1",
                     OperandNode(OperandToken("1"))
             )
 
@@ -2303,7 +2308,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(right.token.value == "1")
             return setExplanationAndReturnNode(
-                    "One rule: \\(x^1 = x\\)",
+                    "\\text{One rule: } x^1 = x",
                     left
             )
 
@@ -2321,7 +2326,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(token is UnaryPlus)
             return setExplanationAndReturnNode(
-                    "Remove redundant plus",
+                    "\\text{Remove redundant plus}",
                     middle
             )
 
@@ -2333,7 +2338,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(token is UnaryMinus && middle is UnaryOperatorNode && middle.token is UnaryMinus)
             return setExplanationAndReturnNode(
-                    "Double negation: two minuses is plus",
+                    "\\text{Double negation: two minuses is plus}",
                     middle.middle
             )
 
@@ -2345,7 +2350,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(token is UnaryMinus && middle is BinaryOperatorNode && middle.token is Multiplication && middle.left.token is OperandToken)
                 return setExplanationAndReturnNode(
-                        "Distribute minus into parenthesis",
+                        "\\text{Distribute minus into parenthesis}",
                         BinaryOperatorNode(Multiplication(), UnaryOperatorNode(UnaryMinus(), middle.left), middle.right)
                 )
 
@@ -2359,7 +2364,7 @@ class RewriteVisitor: NodeVisitor() {
                     || (token is Tan && middle.token is ArcTan)
                     || (token is ArcTan && middle.token is Tan)))
             return setExplanationAndReturnNode(
-                    "Inverse rule: \\(${token.value}(${middle.token.value}(x)) =x\\)",
+                    "\\text{Inverse rule: } ${token.value}(${middle.token.value}(x)) = x",
                     middle.middle
             )
 
@@ -2371,7 +2376,7 @@ class RewriteVisitor: NodeVisitor() {
          */
         if(token is Sqrt && middle is BinaryOperatorNode && middle.token is Power && middle.right.token.value == "2")
             return setExplanationAndReturnNode(
-                    "The square root of something to the power of two, is the absolute value of that something",
+                    "\\text{The square root of something to the power of two, is the absolute value of that something}",
                     UnaryOperatorNode(Abs(), middle.left)
             )
 
@@ -2396,12 +2401,12 @@ class RewriteVisitor: NodeVisitor() {
             is Sqrt -> {
                 if(operand == (-1).toDouble())
                     return setExplanationAndReturnNode(
-                            "\\(\\sqrt{-1} = i \\)",
+                            "\\sqrt{-1} = i ",
                             ImaginaryNode(ImaginaryToken("i"))
                     )
                 if (operand < 0)
                     return setExplanationAndReturnNode(
-                            "Separate square root of negative one",
+                            "\\text{Separate square root of negative one}",
                             BinaryOperatorNode(Multiplication(), UnaryOperatorNode(Sqrt(), UnaryOperatorNode(UnaryMinus(), OperandNode(middle))), UnaryOperatorNode(Sqrt(), OperandNode(OperandToken("-1"))))
                     )
 
@@ -2416,10 +2421,10 @@ class RewriteVisitor: NodeVisitor() {
             else -> throw NotAnOperatorException("Tried to visit and operate on unary operator, but token was not unary operator")
         }
 
-        if(result.isNaN()) throw ArithmeticErrorException("Couldn't solve ${operator.value}(${middle.value}), the result is NaN")
+        if(result.isNaN()) throw ArithmeticErrorException("\\text{Couldn't solve } ${operator.value}(${middle.value}) \\text{, the result is NaN}")
 
         return setExplanationAndReturnNode(
-                "\\(${operator.value}(${middle.value}) = \\) ${prettyPrint(OperandNode(OperandToken(result.toString())))}",
+                "${operator.value}(${middle.value}) = $result",
                 OperandNode(OperandToken(result.toString()))
         )
     }
@@ -2445,12 +2450,12 @@ class RewriteVisitor: NodeVisitor() {
                 /** turn to square root instead */
                 if(right.value == "0.5")
                     return setExplanationAndReturnNode(
-                            "Power of 0.5 is the same as square root",
+                            "\\text{Power of 0.5 is the same as square root}",
                             UnaryOperatorNode(Sqrt(), OperandNode(left))
                     )
                 /** if left is negative and right is not whole number, don't know yet the best way to handle this*/
                 if (operand1 < 0.toBigDecimal() && right.value.toIntOrNull() == null)
-                    throw ArithmeticErrorException("Sorry, this calculator can't handle \\(${left.value}^{${right.value}}\\)")
+                    throw ArithmeticErrorException("\\text{Sorry, this calculator can't handle } ${left.value}^{${right.value}}")
                 operand1.toDouble().pow(operand2.toDouble()).toBigDecimal()
             }
             is Modulus -> operand1.remainder(operand2, CONTEXT)
@@ -2458,7 +2463,7 @@ class RewriteVisitor: NodeVisitor() {
         }
 
         return setExplanationAndReturnNode(
-                "${prettyPrint(BinaryOperatorNode(operator, OperandNode(left), OperandNode(right)))} \\(=\\) ${prettyPrint(OperandNode(OperandToken(result.toString())))}",
+                "${prettyPrint(BinaryOperatorNode(operator, OperandNode(left), OperandNode(right)))} = $result",
                 OperandNode(OperandToken(result.toString()))
         )
     }

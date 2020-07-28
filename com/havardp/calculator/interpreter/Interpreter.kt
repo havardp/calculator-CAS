@@ -35,7 +35,7 @@ class Interpreter(parser: Parser) {
     /** Pretty prints to latex format */
     private fun prettyPrint(ast: AbstractSyntaxTree): String{
         val visitor = PrettyPrintLatexVisitor()
-        return "\\(${ast.accept(visitor)}\\)"
+        return "${ast.accept(visitor)}"
     }
 
     /** Calls rewrite() to get the ordinaryResult object, and either returns it, or if it is a quadratic equation, returns a quadraticResult object */
@@ -73,14 +73,14 @@ class Interpreter(parser: Parser) {
                 rewrittenTree = currentTree.accept(rewriteVisitor)
             } catch (e: ArithmeticErrorException){
                 val explanationSteps = rewriteVisitor.explanationSteps
-                return OrdinaryResult(input, "No Result", solveSteps, explanationSteps, e.message)
+                return OrdinaryResult(input, "\\text{No Result}", solveSteps, explanationSteps, e.message)
             }
 
             /** prevents crash if there's somehow a non terminating loop in the rewrite visitor */
             counter++
             if(counter > 1000) {
                 val explanationSteps = rewriteVisitor.explanationSteps
-                return OrdinaryResult(input, "No Result", solveSteps, explanationSteps, "Unfortunately i got stuck in a loop, and couldn't solve this equation :(")
+                return OrdinaryResult(input, "\\text{No Result}", solveSteps, explanationSteps, "\\text{Unfortunately i got stuck in a loop, and couldn't solve this equation :(}")
             }
         } while(!rewrittenTree.equals(currentTree))
 
